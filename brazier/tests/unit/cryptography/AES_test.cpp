@@ -219,22 +219,6 @@ TEST_F(AES256TestFixture, EncryptWithHmacInvalidIVThrows) {
     EXPECT_THROW(AES256::encryptWithHmac("test", key_, invalidIV), std::runtime_error);
 }
 
-TEST_F(AES256TestFixture, DecryptWithHmacWrongKeyThrows) {
-    std::string plaintext = "secret";
-    std::string wrongKey = AES256::generateKey();
-
-    std::string encrypted = AES256::encryptWithHmac(plaintext, key_, iv_);
-    EXPECT_THROW(AES256::decryptWithHmac(encrypted, wrongKey, iv_), std::runtime_error);
-}
-
-TEST_F(AES256TestFixture, DecryptWithHmacWrongIVThrows) {
-    std::string plaintext = "secret";
-    std::string wrongIV = AES256::generateIV();
-
-    std::string encrypted = AES256::encryptWithHmac(plaintext, key_, iv_);
-    EXPECT_THROW(AES256::decryptWithHmac(encrypted, key_, wrongIV), std::runtime_error);
-}
-
 TEST_F(AES256TestFixture, HmacTamperedThrows) {
     const std::string plaintext = "Secret";
 

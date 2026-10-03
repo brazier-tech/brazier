@@ -119,13 +119,23 @@ std::string AES256::decrypt(const std::string& ciphertext, const std::string& ke
     return plaintext;
 }
 
-std::string AES256::encryptWithHmac(const std::string& plaintext, const std::string& key, const std::string& iv) {
+std::string AES256::encryptWithHmac(const std::string& plaintext,
+    const std::string& key,
+    const std::string& iv) {
+    if (iv.size() != BLOCK_SIZE) {
+        throw std::runtime_error("Invalid IV size");
+    }
     std::string ciphertext = encrypt(plaintext, key, iv);
-    std::string hmac = computeHmac(ciphertext, key);
+    std::string hmac = computeHmac(iv + ciphertext, key);
     return hmac + ciphertext;
 }
 
-std::string AES256::decryptWithHmac(const std::string& data, const std::string& key, const std::string& iv) {
+std::string AES256::decryptWithHmac(const std::string& data,
+    const std::string& key,
+    const std::string& iv) {
+    if (iv.size() != BLOCK_SIZE) {
+        throw std::runtime_error("Invalid IV size");
+    }
     if (data.size() < HMAC_SIZE) {
         throw std::runtime_error("Data is too short to contain HMAC");
     }
@@ -133,14 +143,13 @@ std::string AES256::decryptWithHmac(const std::string& data, const std::string& 
     std::string hmac = data.substr(0, HMAC_SIZE);
     std::string ciphertext = data.substr(HMAC_SIZE);
 
-    std::string expectedHmac = computeHmac(ciphertext, key);
+    std::string expectedHmac = computeHmac(iv + ciphertext, key);
     if (hmac != expectedHmac) {
         throw std::runtime_error("HMAC verification failed - message corrupted or tampered");
     }
 
     return decrypt(ciphertext, key, iv);
 }
-
 std::string AES256::encryptMessage(const std::string& message, const std::string& key) {
     std::string iv = generateIV();
     std::string ciphertext = encrypt(message, key, iv);

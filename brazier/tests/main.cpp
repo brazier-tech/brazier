@@ -20,8 +20,8 @@
 
 #include "main.h"
 
-constexpr bool kStartHttpServer = false;
-constexpr bool kStartHttpsServer = true;
+constexpr bool kStartHttpServer = true;
+constexpr bool kStartHttpsServer = false;
 
 std::shared_ptr<brazier::Server>      g_test_server;
 std::shared_ptr<brazier::HttpsServer> g_test_https_server;
