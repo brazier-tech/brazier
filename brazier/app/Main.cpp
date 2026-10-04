@@ -28,7 +28,7 @@ using namespace brazier;
 
 int main() {
     try {
-        auto benchmark_controller = std::make_shared<BenchmarkController>();
+        /*auto benchmark_controller = std::make_shared<BenchmarkController>();
 
         R(GET, "/test", benchmark_controller, test);
 
@@ -61,26 +61,26 @@ int main() {
             }).detach();
         https_server.run(); 
 
+        return 0;*/
+        brazier::ConfigManager::initGlobal("config_test.json");
+        brazier::global_config->setAutoSave(false);
+
+        std::string server_host =
+            brazier::global_config->get("server.host", "0.0.0.0");
+        int server_port =
+            brazier::global_config->get("server.port", 3502);
+
+        brazier::Logger::log("HTTP server: " + server_host + ":" +
+            std::to_string(server_port), "INFO");
+
+        brazier::Server server(server_host,
+            static_cast<unsigned short>(server_port));
+
+        if (!server.initialize()) return 1;
+
+        server.run();
+
         return 0;
-        //brazier::ConfigManager::initGlobal("config_test.json");
-        //brazier::global_config->setAutoSave(false);
-
-        //std::string server_host =
-        //    brazier::global_config->get("server.host", "0.0.0.0");
-        //int server_port =
-        //    brazier::global_config->get("server.port", 3502);
-
-        //brazier::Logger::log("HTTP server: " + server_host + ":" +
-        //    std::to_string(server_port), "INFO");
-
-        //brazier::Server server(server_host,
-        //    static_cast<unsigned short>(server_port));
-
-        //if (!server.initialize()) return 1;
-
-        //server.run();
-
-        //return 0;
     }
     catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << std::endl;
