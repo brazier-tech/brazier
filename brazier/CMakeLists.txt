@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 cmake_minimum_required(VERSION 3.14)
-project(brazier VERSION 0.1.6 LANGUAGES CXX)
+project(brazier-core VERSION 0.1.6 LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -33,6 +33,8 @@ find_package(hiredis CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(PostgreSQL REQUIRED)
 find_package(OpenSSL REQUIRED)
+
+include(CMakePackageConfigHelpers)
 
 set(LIBRARIES
     Boost::beast
@@ -90,16 +92,16 @@ brazier_hide_platform(Linux)
 brazier_hide_platform(MacOS)
 brazier_hide_platform(Windows)
 
-add_library(brazier_objects OBJECT ${PROJECT_SOURCES})
+add_library(brazier_core_objects OBJECT ${PROJECT_SOURCES})
 
-target_link_libraries(brazier_objects PUBLIC Boost::boost)
+target_link_libraries(brazier_core_objects PUBLIC Boost::boost)
 
-target_include_directories(brazier_objects PUBLIC
+target_include_directories(brazier_core_objects PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
-target_include_directories(brazier_objects PRIVATE
+target_include_directories(brazier_core_objects PRIVATE
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/vendor
     ${CMAKE_SOURCE_DIR}/Database
@@ -108,13 +110,13 @@ target_include_directories(brazier_objects PRIVATE
     ${CMAKE_SOURCE_DIR}/Storage
 )
 
-target_compile_features(brazier_objects PUBLIC cxx_std_20)
-target_compile_definitions(brazier_objects PUBLIC
+target_compile_features(brazier_core_objects PUBLIC cxx_std_20)
+target_compile_definitions(brazier_core_objects PUBLIC
     BOOST_ASIO_HAS_CO_AWAIT
     BOOST_ASIO_HAS_STD_COROUTINE
 )
 
-target_precompile_headers(brazier_objects PRIVATE
+target_precompile_headers(brazier_core_objects PRIVATE
     <boost/asio.hpp>
     <boost/beast.hpp>
     <fmt/format.h>
@@ -126,25 +128,28 @@ target_precompile_headers(brazier_objects PRIVATE
     <memory>
 )
 
-add_library(brazier_static STATIC $<TARGET_OBJECTS:brazier_objects>)
-add_library(brazier_shared SHARED $<TARGET_OBJECTS:brazier_objects>)
+add_library(brazier_core_static STATIC $<TARGET_OBJECTS:brazier_core_objects>)
+add_library(brazier_core_shared SHARED $<TARGET_OBJECTS:brazier_core_objects>)
+
+set_target_properties(brazier_core_static PROPERTIES EXPORT_NAME core_static)
+set_target_properties(brazier_core_shared PROPERTIES EXPORT_NAME core_shared)
 
 if(MSVC)
-    set_target_properties(brazier_shared PROPERTIES
+    set_target_properties(brazier_core_shared PROPERTIES
         WINDOWS_EXPORT_ALL_SYMBOLS ON
     )
 endif()
 
-target_compile_definitions(brazier_shared PRIVATE brazier_EXPORTS)
-target_compile_definitions(brazier_shared PUBLIC brazier_SHARED)
-target_compile_definitions(brazier_static PUBLIC)
+target_compile_definitions(brazier_core_shared PRIVATE brazier_EXPORTS)
+target_compile_definitions(brazier_core_shared PUBLIC brazier_SHARED)
+target_compile_definitions(brazier_core_static PUBLIC)
 
-set_target_properties(brazier_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(brazier_core_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries(brazier_static PUBLIC ${LIBRARIES})
-target_link_libraries(brazier_shared PUBLIC ${LIBRARIES})
+target_link_libraries(brazier_core_static PUBLIC ${LIBRARIES})
+target_link_libraries(brazier_core_shared PUBLIC ${LIBRARIES})
 
-export(TARGETS brazier_static brazier_shared
+export(TARGETS brazier_core_static brazier_core_shared
     NAMESPACE brazier::
     FILE "${CMAKE_CURRENT_BINARY_DIR}/brazierTargets.cmake"
 )
@@ -169,29 +174,31 @@ target_compile_definitions(brazier_app PRIVATE
 )
 
 target_link_libraries(brazier_app PRIVATE
-    brazier_static
+    brazier_core_static
     ${LIBRARIES}
 )
 
-add_library(brazier INTERFACE)
-target_link_libraries(brazier INTERFACE
-    brazier_static
-    brazier_shared
+add_library(brazier_core INTERFACE)
+set_target_properties(brazier_core PROPERTIES EXPORT_NAME core)
+
+target_link_libraries(brazier_core INTERFACE
+    brazier_core_static
+    brazier_core_shared
 )
 
-install(TARGETS brazier_static
+install(TARGETS brazier_core_static
     EXPORT brazierTargets
     ARCHIVE DESTINATION lib
 )
 
-install(TARGETS brazier_shared
+install(TARGETS brazier_core_shared
     EXPORT brazierTargets
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
     ARCHIVE DESTINATION lib
 )
 
-install(TARGETS brazier
+install(TARGETS brazier_core
     EXPORT brazierTargets
 )
 
@@ -199,13 +206,27 @@ install(DIRECTORY include/ DESTINATION include)
 
 install(EXPORT brazierTargets
     NAMESPACE brazier::
-    DESTINATION share/brazier
+    DESTINATION share/brazier-core
     FILE brazierTargets.cmake
 )
 
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/brazier-coreConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/brazier-coreConfig.cmake"
+    INSTALL_DESTINATION share/brazier-core
+)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/brazier-coreConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
 install(
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/cmake/brazierConfig.cmake"
-    DESTINATION share/brazier
+    FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/brazier-coreConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/brazier-coreConfigVersion.cmake"
+    DESTINATION share/brazier-core
 )
 
 option(BUILD_TESTS "Build tests" ON)
@@ -244,7 +265,7 @@ if(BUILD_TESTS)
     target_compile_features(brazier_tests PRIVATE cxx_std_20)
 
     target_link_libraries(brazier_tests PRIVATE
-        brazier_static
+        brazier_core_static
         GTest::gtest
         GTest::gtest_main
         GTest::gmock
