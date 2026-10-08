@@ -31,7 +31,6 @@ find_package(fmt CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(hiredis CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
-find_package(PostgreSQL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(brazier-logger CONFIG REQUIRED)
 
@@ -47,7 +46,6 @@ set(LIBRARIES
     nlohmann_json::nlohmann_json
     hiredis::hiredis
     ZLIB::ZLIB
-    PostgreSQL::PostgreSQL
     OpenSSL::SSL
     OpenSSL::Crypto
     brazier::logger 
@@ -254,7 +252,6 @@ if(BUILD_TESTS)
         ${nlohmann_json_INCLUDE_DIRS}
         ${hiredis_INCLUDE_DIRS}
         ${ZLIB_INCLUDE_DIRS}
-        ${PostgreSQL_INCLUDE_DIRS}
         ${OPENSSL_INCLUDE_DIR}
         ${GTEST_INCLUDE_DIRS}
     )
