@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Gleb Safyannikov
  * SPDX-License-Identifier: LGPL-3.0-or-later
  *
@@ -25,9 +25,9 @@
 #include <cstdint>
 #include <string>
 #include <stdexcept>
-#include "../vendor/Debug/Logger.hpp"
+#include <brazier/log/Logger.hpp>
 
-namespace brazier {
+    namespace brazier {
 
     class Queue {
     public:

@@ -33,6 +33,7 @@ find_package(hiredis CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(PostgreSQL REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(brazier-logger CONFIG REQUIRED)
 
 include(CMakePackageConfigHelpers)
 
@@ -49,6 +50,7 @@ set(LIBRARIES
     PostgreSQL::PostgreSQL
     OpenSSL::SSL
     OpenSSL::Crypto
+    brazier::logger 
 )
 
 if(WIN32)

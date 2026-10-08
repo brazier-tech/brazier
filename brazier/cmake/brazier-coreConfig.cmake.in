@@ -9,6 +9,7 @@ find_dependency(hiredis CONFIG REQUIRED)
 find_dependency(ZLIB REQUIRED)
 find_dependency(PostgreSQL REQUIRED)
 find_dependency(OpenSSL REQUIRED)
+find_dependency(brazier-logger CONFIG REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/brazierTargets.cmake")
 

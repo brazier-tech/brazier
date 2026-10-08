@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Gleb Safyannikov
  * SPDX-License-Identifier: LGPL-3.0-or-later
  *
@@ -20,13 +20,20 @@
 
 #pragma once
 
-#include "BaseMigration.hpp"
+#include <string>
 
 namespace brazier {
 
-    class MigrationMigrationsCreate : public BaseMigration<MigrationMigrationsCreate> {
+    class Module {
     public:
-        static std::vector<std::string> up();
-        static std::string down();
+        virtual ~Module() = default;
+
+        virtual void initialize() = 0;
+
+        virtual void activate() {}
+        virtual void deactivate() {}
+
+        virtual std::string name() const = 0;
     };
+
 }
