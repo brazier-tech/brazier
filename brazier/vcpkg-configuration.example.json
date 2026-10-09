@@ -3,5 +3,8 @@
     "kind": "git",
     "repository": "https://github.com/microsoft/vcpkg",
     "baseline": "f2e1c41da38c71be74ef48684666991929b45418"
-  }
+  },
+  "overlay-ports": [
+    "C:/Users/Admin/source/repos/brazier-registry/ports"
+  ]
 }

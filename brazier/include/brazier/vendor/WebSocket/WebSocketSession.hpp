@@ -30,6 +30,7 @@
 #include <vector>
 #include <string>
 #include <atomic>
+#include <brazier/log/Logger.hpp>
 
 namespace beast = boost::beast;
 namespace websocket = beast::websocket;

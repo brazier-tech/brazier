@@ -5,10 +5,38 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 jobs:
-  linux:
+
+  resolve:
     runs-on: ubuntu-latest
+    outputs:
+      logger_ref: ${{ steps.r.outputs.logger_ref }}
+      orm_ref:    ${{ steps.r.outputs.orm_ref }}
+    steps:
+      - name: Resolve master SHAs
+        id: r
+        shell: bash
+        run: |
+          LOGGER_SHA=$(git ls-remote https://github.com/brazier-tech/brazier-logger.git master | awk '{print $1}')
+          ORM_SHA=$(git ls-remote https://github.com/brazier-tech/brazierORM.git master | awk '{print $1}')
+          echo "logger_ref=$LOGGER_SHA" >> $GITHUB_OUTPUT
+          echo "orm_ref=$ORM_SHA"       >> $GITHUB_OUTPUT
+          echo "resolved logger: $LOGGER_SHA"
+          echo "resolved orm:    $ORM_SHA"
+
+  linux:
+    needs: resolve
+    runs-on: ubuntu-latest
+
+    env:
+      VCPKG_OVERLAY_PORTS: ${{ github.workspace }}/registry/ports
+      BRAZIER_LOGGER_REF:  ${{ needs.resolve.outputs.logger_ref }}
+      BRAZIER_ORM_REF:     ${{ needs.resolve.outputs.orm_ref }}
+      BRAZIER_CORE_REF:    ${{ github.sha }}
+      VCPKG_KEEP_ENV_VARS: "BRAZIER_LOGGER_REF;BRAZIER_ORM_REF;BRAZIER_CORE_REF"
+
     strategy:
       fail-fast: false
       matrix:
@@ -24,19 +52,25 @@ jobs:
             cpp_compiler: clang++
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout brazier
+      uses: actions/checkout@v4
 
-    - name: Start PostgreSQL
+    - name: Checkout brazier-registry
+      uses: actions/checkout@v4
+      with:
+        repository: brazier-tech/brazier-registry
+        path: registry
+        ref: for-local-using
+
+    - name: Debug refs
+      shell: bash
       run: |
-        docker run -d --name postgres \
-          -e POSTGRES_HOST_AUTH_METHOD=trust \
-          -e POSTGRES_USER=postgres \
-          -e POSTGRES_PASSWORD= \
-          -e POSTGRES_DB=postgres \
-          -p 5432:5432 postgres:latest
-        for i in {1..30}; do
-          docker exec postgres pg_isready -U postgres && break || sleep 1
-        done
+        echo "=== ENV ==="
+        echo "BRAZIER_LOGGER_REF  = $BRAZIER_LOGGER_REF"
+        echo "BRAZIER_ORM_REF     = $BRAZIER_ORM_REF"
+        echo "BRAZIER_CORE_REF    = $BRAZIER_CORE_REF"
+        echo "VCPKG_OVERLAY_PORTS = $VCPKG_OVERLAY_PORTS"
+        echo "VCPKG_KEEP_ENV_VARS = $VCPKG_KEEP_ENV_VARS"
 
     - name: Start Redis
       run: |
@@ -49,7 +83,7 @@ jobs:
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgJsonGlob: 'vcpkg.json'
+        vcpkgJsonGlob: 'brazier/vcpkg.json'
 
     - name: Set VCPKG_ROOT
       shell: bash
@@ -63,6 +97,7 @@ jobs:
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }}
         -DBUILD_TESTS=ON
+        -DVCPKG_OVERLAY_PORTS=${{ github.workspace }}/registry/ports
         -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
         -S brazier
 
@@ -143,7 +178,16 @@ jobs:
       shell: bash
 
   windows:
+    needs: resolve
     runs-on: windows-latest
+
+    env:
+      VCPKG_OVERLAY_PORTS: ${{ github.workspace }}/registry/ports
+      BRAZIER_LOGGER_REF:  ${{ needs.resolve.outputs.logger_ref }}
+      BRAZIER_ORM_REF:     ${{ needs.resolve.outputs.orm_ref }}
+      BRAZIER_CORE_REF:    ${{ github.sha }}
+      VCPKG_KEEP_ENV_VARS: "BRAZIER_LOGGER_REF;BRAZIER_ORM_REF;BRAZIER_CORE_REF"
+
     strategy:
       fail-fast: false
       matrix:
@@ -156,13 +200,31 @@ jobs:
             cpp_compiler: cl
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout brazier
+      uses: actions/checkout@v4
+
+    - name: Checkout brazier-registry
+      uses: actions/checkout@v4
+      with:
+        repository: brazier-tech/brazier-registry
+        path: registry
+        ref: for-local-using
+
+    - name: Debug refs
+      shell: bash
+      run: |
+        echo "=== ENV ==="
+        echo "BRAZIER_LOGGER_REF  = $BRAZIER_LOGGER_REF"
+        echo "BRAZIER_ORM_REF     = $BRAZIER_ORM_REF"
+        echo "BRAZIER_CORE_REF    = $BRAZIER_CORE_REF"
+        echo "VCPKG_OVERLAY_PORTS = $VCPKG_OVERLAY_PORTS"
+        echo "VCPKG_KEEP_ENV_VARS = $VCPKG_KEEP_ENV_VARS"
 
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgJsonGlob: 'vcpkg.json'
+        vcpkgJsonGlob: 'brazier/vcpkg.json'
 
     - name: Set VCPKG_ROOT
       shell: bash
@@ -176,6 +238,7 @@ jobs:
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }}
         -DBUILD_TESTS=ON
+        -DVCPKG_OVERLAY_PORTS=${{ github.workspace }}/registry/ports
         -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
         -S brazier
 
@@ -263,7 +326,16 @@ jobs:
       shell: bash
 
   macos:
+    needs: resolve
     runs-on: macos-latest
+
+    env:
+      VCPKG_OVERLAY_PORTS: ${{ github.workspace }}/registry/ports
+      BRAZIER_LOGGER_REF:  ${{ needs.resolve.outputs.logger_ref }}
+      BRAZIER_ORM_REF:     ${{ needs.resolve.outputs.orm_ref }}
+      BRAZIER_CORE_REF:    ${{ github.sha }}
+      VCPKG_KEEP_ENV_VARS: "BRAZIER_LOGGER_REF;BRAZIER_ORM_REF;BRAZIER_CORE_REF"
+
     strategy:
       fail-fast: false
       matrix:
@@ -276,7 +348,25 @@ jobs:
             cpp_compiler: clang++
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout brazier
+      uses: actions/checkout@v4
+
+    - name: Checkout brazier-registry
+      uses: actions/checkout@v4
+      with:
+        repository: brazier-tech/brazier-registry
+        path: registry
+        ref: for-local-using
+
+    - name: Debug refs
+      shell: bash
+      run: |
+        echo "=== ENV ==="
+        echo "BRAZIER_LOGGER_REF  = $BRAZIER_LOGGER_REF"
+        echo "BRAZIER_ORM_REF     = $BRAZIER_ORM_REF"
+        echo "BRAZIER_CORE_REF    = $BRAZIER_CORE_REF"
+        echo "VCPKG_OVERLAY_PORTS = $VCPKG_OVERLAY_PORTS"
+        echo "VCPKG_KEEP_ENV_VARS = $VCPKG_KEEP_ENV_VARS"
 
     - name: Install system dependencies
       run: brew install autoconf
@@ -285,7 +375,7 @@ jobs:
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgJsonGlob: 'vcpkg.json'
+        vcpkgJsonGlob: 'brazier/vcpkg.json'
 
     - name: Set VCPKG_ROOT
       shell: bash
@@ -299,6 +389,7 @@ jobs:
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }}
         -DBUILD_TESTS=ON
+        -DVCPKG_OVERLAY_PORTS=${{ github.workspace }}/registry/ports
         -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
         -S brazier
 

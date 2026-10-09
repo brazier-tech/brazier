@@ -19,7 +19,6 @@
  */
 
 #include "../include/brazier/Core"
-#include "../include/brazier/DB"
 #include "../include/brazier/Http"
 #include "../include/brazier/Engine.hpp"
 #include "BenchmarkController.hpp"
