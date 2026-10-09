@@ -1,11 +1,8 @@
 {
-  "name": "brazier-core",
+  "name": "brazier-dev",
   "version": "0.1.6",
-  "license": "LGPL-3.0-or-later",
-  "description": "Modern C++ MVC framework designed for creating high-performance asynchronous APIs. The framework combines the power of Boost.Asio with modern C++20/23 features",
-  "homepage": "https://github.com/brazier-tech/brazier",
+  "builtin-baseline": "f2e1c41da38c71be74ef48684666991929b45418",
   "dependencies": [
-    "boost-config",
     "boost-asio",
     "boost-beast",
     "boost-system",
@@ -15,14 +12,8 @@
     "fmt",
     "hiredis",
     "nlohmann-json",
+    "openssl",
     "zlib",
-    "openssl"
-  ],
-  "features": {
-    "tests": {
-      "description": "Build core tests",
-      "dependencies": [ "gtest" ]
-    }
-  },
-  "supports": "x64 & (windows | linux | osx)"
+    "gtest"
+  ]
 }
