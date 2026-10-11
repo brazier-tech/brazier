@@ -25,7 +25,7 @@
 #include <string>
 #include <stdexcept>
 #include <boost/asio/awaitable.hpp>
-#include "../vendor/Debug/Logger.hpp"
+#include <brazier/log/Logger.hpp>
 
 namespace brazier {
 

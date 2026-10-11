@@ -19,7 +19,6 @@
  */
 
 #include "../include/brazier/vendor/WebSocket/WebSocketSession.hpp"
-#include "../include/brazier/vendor/Debug/Logger.hpp"
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <chrono>

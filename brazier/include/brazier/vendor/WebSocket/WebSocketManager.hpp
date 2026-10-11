@@ -25,6 +25,7 @@
 #include <vector>
 #include <atomic>
 #include <shared_mutex>
+#include <brazier/log/Logger.hpp>
 
 namespace brazier {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vendor/Debug/Logger.hpp"
+#include <brazier/log/Logger.hpp>
 #include "vendor/Facades/Hash.hpp"
 #include "vendor/Handlers/ENV.hpp"
 #include "Router/Route.hpp"

@@ -38,7 +38,6 @@
 #include "vendor/Handlers/ENV.hpp"
 #include "Database/Queue.hpp"
 #include "Database/Cache.hpp"
-#include "Database/Migrations/MigrationManager.hpp"
 #include "Router/RouterRegisterer.hpp"
 #include "Router/Router.hpp"
 #include "Engine.hpp"
@@ -72,7 +71,7 @@ namespace brazier {
         Server(const std::string& host, unsigned short port);
 
         bool initialize();
-        
+
         void run();
         void stop();
 

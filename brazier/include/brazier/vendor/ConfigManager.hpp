@@ -28,7 +28,7 @@
 #include <mutex>
 #include <any>
 #include <string>
-#include "Debug/Logger.hpp"
+#include <brazier/log/Logger.hpp>
 
 namespace brazier {
 

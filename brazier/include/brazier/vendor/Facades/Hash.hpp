@@ -26,7 +26,7 @@
 #include <openssl/thread.h>
 #include <openssl/kdf.h>
 #include <openssl/rand.h>
-#include "../Debug/Logger.hpp"
+#include <brazier/log/Logger.hpp>
 #include <vector>
 #include <string>
 #include <sstream>

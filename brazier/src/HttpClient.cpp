@@ -19,7 +19,6 @@
  */
 
 #include "../include/brazier/App/Http/Helpers/HttpClient.hpp"
-#include "../include/brazier/vendor/Debug/Logger.hpp"
 
 namespace brazier {
 

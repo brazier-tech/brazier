@@ -189,13 +189,4 @@ void brazier::HttpsServer::initializeConnections() {
             std::string(e.what()), "ERROR");
     }
 
-    try {
-        Database db;
-        auto migrator = std::make_unique<MigrationManager>(db);
-        migrator->Initialize();
-    }
-    catch (const std::exception& e) {
-        Logger::log("Database migration failed: " + std::string(e.what()),
-            "ERROR");
-    }
 }

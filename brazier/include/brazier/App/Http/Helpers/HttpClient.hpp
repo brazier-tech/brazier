@@ -38,6 +38,7 @@
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/beast/version.hpp>
 #include <nlohmann/json.hpp>
+#include <brazier/log/Logger.hpp>
 
 namespace brazier {
 

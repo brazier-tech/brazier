@@ -116,7 +116,7 @@ const std::string& brazier::Server::getHost() const { return host_; }
 
 void brazier::Server::initializeConnections() {
     try {
-        Queue::connect(global_config->get("nosql.host", "127.0.0.1"), 
+        Queue::connect(global_config->get("nosql.host", "127.0.0.1"),
             global_config->get("nosql.port", 6379));
     }
     catch (const std::exception& e) {
@@ -131,13 +131,6 @@ void brazier::Server::initializeConnections() {
         Logger::log("Connection to NOSQL database failed: " + std::string(e.what()), "ERROR");
     }
 
-    try {
-        Database db;
-        (new MigrationManager(db))->Initialize();
-    }
-    catch (const std::exception& e) {
-        Logger::log("Database migration failed: " + std::string(e.what()), "ERROR");
-    }
 }
 
 net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {

@@ -1,3 +1,5 @@
+@PACKAGE_INIT@
+
 include(CMakeFindDependencyMacro)
 
 find_dependency(Boost CONFIG REQUIRED COMPONENTS beast asio system thread filesystem)
@@ -7,9 +9,10 @@ find_dependency(hiredis CONFIG REQUIRED)
 find_dependency(ZLIB REQUIRED)
 find_dependency(PostgreSQL REQUIRED)
 find_dependency(OpenSSL REQUIRED)
+find_dependency(brazier-logger CONFIG REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/brazierTargets.cmake")
 
-if(NOT TARGET brazier::brazier)
-    add_library(brazier::brazier ALIAS brazier)
-endif()
+set(brazier-core_FOUND TRUE)
+
+check_required_components(brazier-core)

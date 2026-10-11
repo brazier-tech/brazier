@@ -19,7 +19,6 @@
  */
 
 #include "../include/brazier/vendor/WebSocket/WebSocketManager.hpp"
-#include "../include/brazier/vendor/Debug/Logger.hpp"
 
 namespace brazier {
 
