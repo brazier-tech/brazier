@@ -131,9 +131,9 @@ Add all the other packages you need to the end of the list
   "database": {
     "host": "127.0.0.1",
     "port": 5432,
-    "username": "kirill",
-    "password": "qwerty",
-    "database": "light"
+    "username": "username",
+    "password": "passowrd",
+    "database": "database"
   },
   "redis": {
     "host": "127.0.0.1",
