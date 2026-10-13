@@ -8,8 +8,6 @@ The framework combines the power of Boost.Asio with modern C++20/23 features.
 - **Full asynchrony** based on Boost.Asio coroutines
 - **MVC architecture** with clear separation of concerns
 - **Built-in database migration** system
-- **JWT authentication** support
-- **Redis caching**
 - **WebSockets** technology support
 - **HTTPS / TLS** support with SNI, ALPN-ready, mTLS
 - **High performance** with minimal overhead
@@ -22,14 +20,8 @@ The framework combines the power of Boost.Asio with modern C++20/23 features.
 - **CMake** 3.14+ (build system)
 - **vcpkg** (C++ dependency manager)
 - **C++ compiler** with C++20 support (GCC 10+, Clang 10+, MSVC 2019 16.8+)
-- **.env file** with environment configuration
+- **config.json** with environment configuration
 - **Brazier libraries** (pre-built)
-
-### **Supported platforms:**
-
-- **Windows** 10/11
-- **Linux** (Ubuntu 20.04+, CentOS 8+)
-- **macOS** 11+
 
 ## Project structure
 
@@ -40,10 +32,6 @@ your_project/
 ├── vcpkg.json                   # vcpkg dependencies
 ├── your_project/
 │   └── Proj.cpp           # Main application file
-├── libs/
-│   └── brazier/
-│       ├── x64-windows/        # Windows libraries
-│       └── x64-linux/          # Linux libraries
 └── include/                    # Header files
 ```
 
@@ -52,9 +40,10 @@ your_project/
 ### CMakeLists.txt
 
 ```cmake
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 4.2)
 
-set(PROJECT_NAME "your_project")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(PROJECT_NAME "brazier_docs")
 project(${PROJECT_NAME} VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -63,103 +52,31 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})
-    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
-endif()
-
 if(MSVC)
     add_compile_options(/utf-8)
 endif()
+find_package(brazier CONFIG REQUIRED COMPONENTS core orm logger)                 
 
-find_package(Boost CONFIG REQUIRED COMPONENTS beast asio filesystem system thread date_time smart_ptr optional variant algorithm)
-find_package(fmt CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(jwt-cpp CONFIG REQUIRED)
-find_package(hiredis CONFIG REQUIRED)
-find_package(ZLIB REQUIRED)
-find_package(PostgreSQL REQUIRED)
-find_package(OpenSSL REQUIRED)
-# Add all the other packages you need here
-
-if(WIN32)
-    set(brazier_DIR "${CMAKE_SOURCE_DIR}/libs/brazier/x64-windows")
-elseif(UNIX)
-    set(brazier_DIR "${CMAKE_SOURCE_DIR}/libs/brazier/x64-linux")
-endif()
-
-add_library(brazier SHARED IMPORTED)
-
-if(WIN32)
-    set_target_properties(brazier PROPERTIES
-        IMPORTED_IMPLIB "${brazier_DIR}/lib/brazier.lib"
-        IMPORTED_LOCATION "${brazier_DIR}/bin/brazier.dll"
-        INTERFACE_INCLUDE_DIRECTORIES "${brazier_DIR}/include"
-    )
-elseif(UNIX)
-    set_target_properties(brazier PROPERTIES
-        IMPORTED_IMPLIB "${brazier_DIR}/lib/libbrazier.a"
-        IMPORTED_LOCATION "${brazier_DIR}/bin/libbrazier.dylib"
-        INTERFACE_INCLUDE_DIRECTORIES "${brazier_DIR}/include"
-    )
-endif()
-
-target_include_directories(brazier INTERFACE
-    "${brazier_DIR}"
-    "${brazier_DIR}/include"
+file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_SOURCE_DIR}/include/*.hpp"
 )
 
-target_link_libraries(brazier INTERFACE
-    Boost::beast  
-    Boost::asio
-    Boost::filesystem
-    Boost::system
-    Boost::thread
-    Boost::date_time
-    Boost::smart_ptr
-    Boost::optional
-    Boost::variant
-    Boost::algorithm
-    fmt::fmt
-    nlohmann_json::nlohmann_json
-    jwt-cpp::jwt-cpp
-    hiredis::hiredis
-    ZLIB::ZLIB
-    PostgreSQL::PostgreSQL
-    OpenSSL::SSL
-    OpenSSL::Crypto
+add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp ${APP_SOURCES})        
 
-    # Add all the other packages you need here
+add_executable("init_orm" utils/init_orm.cpp)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    brazier::brazier
 )
 
-add_executable(${PROJECT_NAME} ${PROJECT_NAME}/${PROJECT_NAME}.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE brazier)
+target_link_libraries("init_orm" PRIVATE 
+    brazier::brazier
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
 )
-
-if(WIN32)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/vcpkg_installed/x64-windows/include)
-endif()
-
-if(WIN32)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    
-        COMMAND ${CMAKE_COMMAND} -E copy
-            "${brazier_DIR}/bin/brazier.dll"
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>
-
-        COMMENT "Copying brazier.dll to output directory"
-    )
-elseif(UNIX)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-            "${brazier_DIR}/bin/libbrazier.dylib"
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>
-
-        COMMENT "Copying libbrazier.dylib to output directory"
-    )
-endif()
 ```
 
 ### vcpkg.json
@@ -169,37 +86,12 @@ endif()
   "name": "your_project",
   "version": "1.0.0",
   "dependencies": [
-    "boost-algorithm",
-    "boost-asio",
-    "boost-beast",
-    "boost-date-time",
-    "boost-filesystem",
-    "boost-optional",
-    "boost-smart-ptr",
-    "boost-system",
-    "boost-thread",
-    "boost-variant",
-    "fmt",
-    "hiredis",
-    "jwt-cpp",
-    "libpq",
-    "nlohmann-json",
-    "zlib"
+    "brazier"
   ]
 }
 ```
 
 Add all the other packages you need to the end of the list
-
-## Building the project
-
-```text
-# Windows
-.\build.bat
-
-# Linux/macOS
-sh build.sh
-```
 
 ## Brazier configuration
 
@@ -614,20 +506,16 @@ keys take priority over everything else and are intended for the test suite.
 ### Using the HTTPS server
 
 ```cpp
-#include "../include/brazier/Core"
-#include "../include/brazier/DB"
-#include "../include/brazier/Http"
-#include "../include/brazier/Engine.hpp"
+#include <brazier/Core>
+#include <brazier/orm.hpp>
 
 int main() {
     try {
         brazier::ConfigManager::initGlobal("config.json");
         brazier::global_config->setAutoSave(false);
 
-        std::string host = brazier::global_config->get(
-            "https_server.host", "0.0.0.0");
-        int port = brazier::global_config->get(
-            "https_server.port", 8443);
+        std::string host = brazier::global_config->get("https_server.host", "0.0.0.0");
+        int port = brazier::global_config->get("https_server.port", 8443);
 
         brazier::HttpsServer server(host, port);
 
@@ -1175,7 +1063,7 @@ They implement application business logic, work with data models, and form HTTP 
 
 ```cpp
 #include <brazier/Core>
-#include <brazier/DB>
+#include <brazier/orm.hpp>
 #include <brazier/Http>
 
 class UserController : public brazier::Controller {
@@ -1560,125 +1448,6 @@ res.set(http::field::x_custom_header, "custom_value");
 res.set("X-RateLimit-Limit", "100");
 res.set("X-RateLimit-Remaining", "95");
 ```
-## Collections
-A convenience container that extends std::vector<std::shared_ptr<ModelType>> with helper methods for common collection operations — persistence, deletion, JSON serialization, and functional-style querying.
-
-It is designed to work with model classes that follow the brazier ORM conventions (specifically, a static `saveMany(...)` method and instance methods `delete_()` / `toJson()`).
-
-```cpp
-#include <brazier/DB>
-```
-
-Collection inherits all constructors from `std::vector<std::shared_ptr<ModelType>>`, plus a few convenience overloads.
-
-```cpp
-Collection<User> users;
-
-Collection<User> users = { std::make_shared<User>(...), std::make_shared<User>(...) };
-
-std::vector<std::shared_ptr<User>> vec = ...;
-Collection<User> users(vec);
-Collection<User> users(std::move(vec));
-```
-
-### Persistence
-`bool save()`
-
-Persists the entire collection by delegating to `ModelType::saveMany(*this)`.
-
-Returns true on success, false on failure.
-
-Returns false immediately (without calling `saveMany`) if the collection is empty.
-
-```cpp
-Collection<User> users;
-users.push_back(std::make_shared<User>("User 1"));
-users.push_back(std::make_shared<User>("User 2"));
-
-if (!users.save()) {
-    fail();
-}
-```
-
-Note: The exact semantics of saveMany are defined by your model. Collection only forwards the call.
-
-`bool delete_()`
-
-Deletes every model in the collection by calling `item->delete_()` on each element.
-
-Iterates over the whole collection, continuing on error.
-
-If an individual `delete_()` throws, the exception is logged via
-`Logger::log(..., "ERROR")` and the loop continues with the next item.
-
-Returns true only if all deletions succeeded; false if the collection
-is empty or any item failed.
-
-The trailing underscore in `delete_` avoids clashing with the C++ keyword delete.
-
-```cpp
-Collection<User> users = User::where("inactive = true");
-bool ok = users.delete_();
-
-if (!ok) {
-    fail();
-}
-```
-
-`json toJson() const`
-
-Returns a nlohmann::json array where each element is the result of `item->toJson()`.
-
-```cpp
-Collection<User> users = ...;
-json j = users.toJson();
-std::cout << j.dump(2) << std::endl;
-```
-
-Output:
-```json
-[
-    { "id": 1, "name": "User 1" },
-    { "id": 2, "name": "User 2" }
-]
-```
-
-### Querying
-
-All query methods take a predicate of type
-`std::function<bool(std::shared_ptr<ModelType>)>` and do not modify the collection.
-___
-`Collection<ModelType> filter(predicate) const`
-
-Returns a new Collection containing only the elements for which predicate returns true.
-___
-```cpp
-auto admins = users.filter([](auto u) { return u->isAdmin(); });
-
-bool all(predicate) const
-```
-
-Returns true if the predicate holds for every element. Returns true for an empty collection (vacuous truth, matching std::all_of).
-___
-```cpp
-bool everyoneActive = users.all([](auto u) { return u->active; });
-
-bool any(predicate) const
-```
-
-Returns true if the predicate holds for at least one element. Returns false for an empty collection.
-
-___
-
-```cpp
-bool hasAdmin = users.any([](auto u) { return u->isAdmin(); });
-
-std::shared_ptr<ModelType> find(predicate) const
-```
-
-Returns the first element matching the predicate, or nullptr if none match.
-
-`auto alice = users.find([](auto u) { return u->name == "Alice"; });`
 
 ## Helpers in brazier Framework
 
