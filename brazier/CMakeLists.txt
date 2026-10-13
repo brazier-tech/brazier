@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 cmake_minimum_required(VERSION 3.14)
-project(brazier-core VERSION 0.1.6 LANGUAGES CXX)
+project(brazier-core VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
