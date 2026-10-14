@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           LOGGER_SHA=$(git ls-remote https://github.com/brazier-tech/brazier-logger.git master | awk '{print $1}')
-          ORM_SHA=$(git ls-remote https://github.com/brazier-tech/brazierORM.git master | awk '{print $1}')
+          ORM_SHA=$(git ls-remote https://github.com/brazier-tech/brazier-orm.git master | awk '{print $1}')
           echo "logger_ref=$LOGGER_SHA" >> $GITHUB_OUTPUT
           echo "orm_ref=$ORM_SHA"       >> $GITHUB_OUTPUT
           echo "resolved logger: $LOGGER_SHA"
