@@ -103,7 +103,6 @@ target_include_directories(brazier_core_objects PUBLIC
 
 target_include_directories(brazier_core_objects PRIVATE
     ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/vendor
     ${CMAKE_SOURCE_DIR}/Database
     ${CMAKE_SOURCE_DIR}/Router
     ${CMAKE_SOURCE_DIR}/App
