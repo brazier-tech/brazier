@@ -1,31 +1,7 @@
-/*
- * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Gleb Safyannikov
- * SPDX-License-Identifier: LGPL-3.0-or-later
- *
- * This file is part of brazier.
- *
- * brazier is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * brazier is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with brazier; if not, see <https://www.gnu.org/licenses/>.
- */
-
 #include "../include/brazier/server.hpp"
 
 brazier::Server::Server(const std::string& host, unsigned short port)
-    : acceptor_(io_, tcp::endpoint(net::ip::make_address(host), port))
-    , port_(port), host_(host) {
-    acceptor_.set_option(tcp::acceptor::reuse_address(true));
-    work_guard_ = std::make_unique<net::executor_work_guard<net::io_context::executor_type>>(io_.get_executor());
-}
+    : port_(port), host_(host) {}
 
 bool brazier::Server::initialize() {
     try {
@@ -40,7 +16,6 @@ bool brazier::Server::initialize() {
             auto driver = std::make_shared<brazier::FileDriver>();
             driver->setRootPath(cfg.value("root", "./"));
             driver->initAsync();
-
             StorageManager::getInstance().registerDriver(name, driver);
         }
 
@@ -49,10 +24,54 @@ bool brazier::Server::initialize() {
             StorageManager::getInstance().setDefaultDriver(def);
         }
 
-        initializeConnections();
-        RouterRegisterer::init(io_);
+        max_connections_ = global_config->get("protocol.max_connections", 10000);
 
-        Logger::log("Server initialized on " + host_ + ":" + std::to_string(port_), "SUCCESS");
+        const tcp::endpoint endpoint(net::ip::make_address(host_), port_);
+        const int n = platform::get_thread_count();
+        const bool split_accept = !platform::has_reuse_port();
+        const int io_count = n;
+
+        io_contexts_.reserve(io_count);
+        work_guards_.reserve(io_count);
+        acceptors_.reserve(split_accept ? 1 : io_count);
+
+        for (int i = 0; i < io_count; ++i) {
+            auto io = std::make_unique<net::io_context>();
+            const bool needs_acceptor = !split_accept || (i == 0);
+
+            if (needs_acceptor) {
+                auto acc = std::make_unique<tcp::acceptor>(*io);
+                acc->open(endpoint.protocol());
+                acc->set_option(tcp::acceptor::reuse_address(true));
+
+                const auto native = static_cast<platform::NativeSocket>(acc->native_handle());
+
+                if (!platform::set_reuse_port(native) && platform::has_reuse_port()) {
+                    Logger::log("SO_REUSEPORT setsockopt failed on worker " + std::to_string(i), "WARNING");
+                }
+                if (!platform::set_defer_accept(native, 1) && platform::has_defer_accept()) {
+                    Logger::log("TCP_DEFER_ACCEPT setsockopt failed on worker " + std::to_string(i), "WARNING");
+                }
+
+                acc->bind(endpoint);
+                acc->listen(boost::asio::socket_base::max_listen_connections);
+                acceptors_.push_back(std::move(acc));
+            }
+
+            work_guards_.push_back(std::make_unique<
+                net::executor_work_guard<net::io_context::executor_type>>(io->get_executor()));
+
+            io_contexts_.push_back(std::move(io));
+        }
+
+        initializeConnections();
+        RouterRegisterer::init(*io_contexts_[0]);
+
+        Logger::log("HTTP Server initialized on " + host_ + ":" + std::to_string(port_) +
+            " [io_contexts=" + std::to_string(io_count) +
+            ", acceptors=" + std::to_string(acceptors_.size()) +
+            ", dispatch=" + (split_accept ? "round-robin" : "SO_REUSEPORT") + "]",
+            "SUCCESS");
         return true;
     }
     catch (const std::exception& e) {
@@ -63,17 +82,31 @@ bool brazier::Server::initialize() {
 
 void brazier::Server::run() {
     try {
-        net::co_spawn(io_, accept_loop(), net::detached);
+        const int io_count = static_cast<int>(io_contexts_.size());
+        const bool split_accept = !platform::has_reuse_port();
 
-        int threads_count = std::thread::hardware_concurrency();
-        if (threads_count == 0) threads_count = 1;
+        if (split_accept) {
+            net::co_spawn(*io_contexts_[0],
+                accept_and_dispatch(*acceptors_[0], 0),
+                net::detached);
+        }
+        else {
+            for (int i = 0; i < io_count; ++i) {
+                net::co_spawn(*io_contexts_[i],
+                    accept_loop(*acceptors_[i]),
+                    net::detached);
+            }
+        }
 
-        Logger::log("Starting " + std::to_string(threads_count) + " worker threads", "INFO");
+        Logger::log("Starting " + std::to_string(io_count) + " io_context(s) over " +
+            std::to_string(io_count) + " thread(s), dispatch=" +
+            (split_accept ? "round-robin" : "SO_REUSEPORT"), "INFO");
 
-        for (int i = 0; i < threads_count; ++i) {
-            threads_.emplace_back([this] {
-                brazier::Engine::init(io_);
-                io_.run();
+        for (auto& io : io_contexts_) {
+            auto* io_ptr = io.get();
+            threads_.emplace_back([io_ptr] {
+                brazier::Engine::init(*io_ptr);
+                io_ptr->run();
                 });
         }
 
@@ -88,9 +121,7 @@ void brazier::Server::run() {
             });
 
         for (auto& t : threads_) {
-            if (t.joinable()) {
-                t.join();
-            }
+            if (t.joinable()) t.join();
         }
     }
     catch (const std::exception& e) {
@@ -100,15 +131,21 @@ void brazier::Server::run() {
 }
 
 void brazier::Server::stop() {
-    shutdown_flag_.store(true);
+    Logger::log("HTTP Server stopping...", "INFO");
+    shutdown_flag_.store(true, std::memory_order_release);
+    shutting_down_.store(true, std::memory_order_release);
 
-    work_guard_.reset();
-    io_.stop();
-
-    if (stats_thread_.joinable()) {
-        stats_thread_.join();
+    for (auto& acc : acceptors_) {
+        boost::system::error_code ignore;
+        acc->close(ignore);
     }
-    Logger::log("Server stopped", "INFO");
+
+    for (auto& wg : work_guards_) wg->reset();
+    for (auto& io : io_contexts_) io->stop();
+
+    if (stats_thread_.joinable()) stats_thread_.join();
+
+    Logger::log("HTTP Server stopped", "INFO");
 }
 
 unsigned short brazier::Server::getPort() const { return port_; }
@@ -130,7 +167,6 @@ void brazier::Server::initializeConnections() {
     catch (const std::exception& e) {
         Logger::log("Connection to NOSQL database failed: " + std::string(e.what()), "ERROR");
     }
-
 }
 
 net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {
@@ -225,9 +261,70 @@ net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {
     co_return;
 }
 
-net::awaitable<void> brazier::Server::accept_loop() {
+net::awaitable<void> brazier::Server::accept_loop(tcp::acceptor& acceptor) {
     for (;;) {
-        tcp::socket socket = co_await acceptor_.async_accept(net::use_awaitable);
-        net::co_spawn(io_, handle_connection(std::move(socket)), net::detached);
+        if (shutting_down_.load(std::memory_order_acquire)) co_return;
+
+        beast::error_code ec;
+        tcp::socket socket = co_await acceptor.async_accept(
+            net::redirect_error(net::use_awaitable, ec));
+
+        if (ec) {
+            if (ec == net::error::operation_aborted ||
+                shutting_down_.load(std::memory_order_acquire)) {
+                co_return;
+            }
+            Logger::log("Accept error: " + ec.message(), "ERROR");
+            continue;
+        }
+
+        if (connection_count_.load(std::memory_order_acquire) >= max_connections_) {
+            Logger::log("Connection limit reached, rejecting", "WARNING");
+            boost::system::error_code ignore;
+            socket.close(ignore);
+            continue;
+        }
+
+        net::co_spawn(acceptor.get_executor(),
+            handle_connection(std::move(socket)), net::detached);
+    }
+}
+
+net::awaitable<void> brazier::Server::accept_and_dispatch(
+    tcp::acceptor& acceptor, int worker_begin)
+{
+    const int worker_count =
+        static_cast<int>(io_contexts_.size()) - worker_begin;
+    int next = 0;
+
+    for (;;) {
+        if (shutting_down_.load(std::memory_order_acquire)) co_return;
+
+        const int idx = worker_begin + (next++ % worker_count);
+
+        tcp::socket socket(*io_contexts_[idx]);
+
+        beast::error_code ec;
+        co_await acceptor.async_accept(
+            socket, net::redirect_error(net::use_awaitable, ec));
+
+        if (ec) {
+            if (ec == net::error::operation_aborted ||
+                shutting_down_.load(std::memory_order_acquire)) {
+                co_return;
+            }
+            Logger::log("Accept error: " + ec.message(), "ERROR");
+            continue;
+        }
+
+        if (connection_count_.load(std::memory_order_acquire) >= max_connections_) {
+            Logger::log("Connection limit reached, rejecting", "WARNING");
+            boost::system::error_code ignore;
+            socket.close(ignore);
+            continue;
+        }
+
+        net::co_spawn(*io_contexts_[idx],
+            handle_connection(std::move(socket)), net::detached);
     }
 }

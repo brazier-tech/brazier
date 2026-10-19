@@ -1,23 +1,3 @@
-/*
- * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Gleb Safyannikov
- * SPDX-License-Identifier: LGPL-3.0-or-later
- *
- * This file is part of brazier.
- *
- * brazier is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * brazier is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with brazier; if not, see <https://www.gnu.org/licenses/>.
- */
-
 #pragma once
 
 #include <boost/beast/core.hpp>
@@ -43,6 +23,8 @@
 #include "Engine.hpp"
 #include "Filesystem/Filesystem.hpp"
 #include "vendor/ConfigManager.hpp"
+#include "Platform/SystemInfo.hpp"
+#include "Platform/SocketOptions.hpp"
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -54,24 +36,27 @@ namespace brazier {
 
     class Server {
     private:
-        net::io_context io_;
-        tcp::acceptor acceptor_;
+        std::vector<std::unique_ptr<net::io_context>> io_contexts_;
+        std::vector<std::unique_ptr<tcp::acceptor>>   acceptors_;
+        std::vector<std::unique_ptr<net::executor_work_guard<net::io_context::executor_type>>> work_guards_;
+
         unsigned short port_;
         std::string host_;
         std::vector<std::thread> threads_;
-        std::unique_ptr<net::executor_work_guard<net::io_context::executor_type>> work_guard_;
 
         std::atomic<int> connection_count_{ 0 };
         std::atomic<int> total_requests_{ 0 };
 
-        std::thread stats_thread_;                   
+        std::thread stats_thread_;
         std::atomic<bool> shutdown_flag_{ false };
+        std::atomic<bool> shutting_down_{ false };
+
+        int max_connections_ = 10000;
 
     public:
         Server(const std::string& host, unsigned short port);
 
         bool initialize();
-
         void run();
         void stop();
 
@@ -82,6 +67,7 @@ namespace brazier {
         void initializeConnections();
 
         net::awaitable<void> handle_connection(tcp::socket socket);
-        net::awaitable<void> accept_loop();
+        net::awaitable<void> accept_loop(tcp::acceptor& acceptor);
+        net::awaitable<void> accept_and_dispatch(tcp::acceptor& acceptor, int worker_begin);
     };
 }
