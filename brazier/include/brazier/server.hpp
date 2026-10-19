@@ -52,9 +52,11 @@ namespace brazier {
         std::atomic<bool> shutting_down_{ false };
 
         int max_connections_ = 10000;
+        std::chrono::seconds keep_alive_timeout_{ 60 };
 
     public:
         Server(const std::string& host, unsigned short port);
+        ~Server() { stop(); }
 
         bool initialize();
         void run();

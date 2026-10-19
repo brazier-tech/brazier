@@ -24,6 +24,8 @@ bool brazier::Server::initialize() {
             StorageManager::getInstance().setDefaultDriver(def);
         }
 
+        keep_alive_timeout_ = std::chrono::seconds(
+            global_config->get("protocol.keep_alive_timeout", 60));
         max_connections_ = global_config->get("protocol.max_connections", 10000);
 
         const tcp::endpoint endpoint(net::ip::make_address(host_), port_);
@@ -98,10 +100,6 @@ void brazier::Server::run() {
             }
         }
 
-        Logger::log("Starting " + std::to_string(io_count) + " io_context(s) over " +
-            std::to_string(io_count) + " thread(s), dispatch=" +
-            (split_accept ? "round-robin" : "SO_REUSEPORT"), "INFO");
-
         for (auto& io : io_contexts_) {
             auto* io_ptr = io.get();
             threads_.emplace_back([io_ptr] {
@@ -119,6 +117,9 @@ void brazier::Server::run() {
                     ", Total requests: " + std::to_string(total_requests_.load()), "INFO");
             }
             });
+       
+        Logger::log("Starting " + std::to_string(io_count) + " io_context(s) over " +
+            std::to_string(threads_.size()) + " thread(s)", "INFO");
 
         for (auto& t : threads_) {
             if (t.joinable()) t.join();
@@ -132,19 +133,17 @@ void brazier::Server::run() {
 
 void brazier::Server::stop() {
     Logger::log("HTTP Server stopping...", "INFO");
-    shutdown_flag_.store(true, std::memory_order_release);
-    shutting_down_.store(true, std::memory_order_release);
+    shutdown_flag_.store(true);
+    shutting_down_.store(true);
 
     for (auto& acc : acceptors_) {
         boost::system::error_code ignore;
         acc->close(ignore);
     }
-
-    for (auto& wg : work_guards_) wg->reset();
+    for (auto& wg : work_guards_) wg.reset();
     for (auto& io : io_contexts_) io->stop();
 
     if (stats_thread_.joinable()) stats_thread_.join();
-
     Logger::log("HTTP Server stopped", "INFO");
 }
 
@@ -182,7 +181,7 @@ net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {
         socket.set_option(boost::asio::socket_base::keep_alive(true));
 
         net::steady_timer idle_timer(co_await net::this_coro::executor);
-        const auto IDLE_TIMEOUT = std::chrono::seconds(global_config->get("keep-alive-timeout", 60));
+        const auto IDLE_TIMEOUT = keep_alive_timeout_;
         bool timed_out = false;
 
         auto reset_timer = [&]() {
@@ -203,18 +202,13 @@ net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {
 
             co_await http::async_read(socket, buffer, req, net::redirect_error(net::use_awaitable, ec));
 
-            if (ec == http::error::end_of_stream) {
-                break;
-            }
+            if (ec == http::error::end_of_stream) break;
             if (ec) {
-                if (ec == net::error::operation_aborted) {
-                    break;
-                }
+                if (ec == net::error::operation_aborted) break;
                 throw boost::system::system_error(ec);
             }
 
             reset_timer();
-
             total_requests_++;
             keep_alive = req.keep_alive();
 
@@ -234,14 +228,10 @@ net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {
             }
 
             res.prepare_payload();
-
             co_await http::async_write(socket, res, net::use_awaitable);
 
             buffer.consume(buffer.size());
-
-            if (!keep_alive) {
-                break;
-            }
+            if (!keep_alive) break;
         }
 
         idle_timer.cancel();
@@ -266,14 +256,10 @@ net::awaitable<void> brazier::Server::accept_loop(tcp::acceptor& acceptor) {
         if (shutting_down_.load(std::memory_order_acquire)) co_return;
 
         beast::error_code ec;
-        tcp::socket socket = co_await acceptor.async_accept(
-            net::redirect_error(net::use_awaitable, ec));
+        tcp::socket socket = co_await acceptor.async_accept(net::redirect_error(net::use_awaitable, ec));
 
         if (ec) {
-            if (ec == net::error::operation_aborted ||
-                shutting_down_.load(std::memory_order_acquire)) {
-                co_return;
-            }
+            if (ec == net::error::operation_aborted || shutting_down_.load(std::memory_order_acquire)) co_return;
             Logger::log("Accept error: " + ec.message(), "ERROR");
             continue;
         }
@@ -285,16 +271,12 @@ net::awaitable<void> brazier::Server::accept_loop(tcp::acceptor& acceptor) {
             continue;
         }
 
-        net::co_spawn(acceptor.get_executor(),
-            handle_connection(std::move(socket)), net::detached);
+        net::co_spawn(acceptor.get_executor(), handle_connection(std::move(socket)), net::detached);
     }
 }
 
-net::awaitable<void> brazier::Server::accept_and_dispatch(
-    tcp::acceptor& acceptor, int worker_begin)
-{
-    const int worker_count =
-        static_cast<int>(io_contexts_.size()) - worker_begin;
+net::awaitable<void> brazier::Server::accept_and_dispatch(tcp::acceptor& acceptor, int worker_begin) {
+    const int worker_count = static_cast<int>(io_contexts_.size()) - worker_begin;
     int next = 0;
 
     for (;;) {
@@ -305,14 +287,10 @@ net::awaitable<void> brazier::Server::accept_and_dispatch(
         tcp::socket socket(*io_contexts_[idx]);
 
         beast::error_code ec;
-        co_await acceptor.async_accept(
-            socket, net::redirect_error(net::use_awaitable, ec));
+        co_await acceptor.async_accept(socket, net::redirect_error(net::use_awaitable, ec));
 
         if (ec) {
-            if (ec == net::error::operation_aborted ||
-                shutting_down_.load(std::memory_order_acquire)) {
-                co_return;
-            }
+            if (ec == net::error::operation_aborted || shutting_down_.load(std::memory_order_acquire)) co_return;
             Logger::log("Accept error: " + ec.message(), "ERROR");
             continue;
         }
@@ -324,7 +302,6 @@ net::awaitable<void> brazier::Server::accept_and_dispatch(
             continue;
         }
 
-        net::co_spawn(*io_contexts_[idx],
-            handle_connection(std::move(socket)), net::detached);
+        net::co_spawn(*io_contexts_[idx], handle_connection(std::move(socket)), net::detached);
     }
 }

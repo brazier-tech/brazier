@@ -27,10 +27,10 @@ using namespace brazier;
 
 int main() {
     try {
-        /*auto benchmark_controller = std::make_shared<BenchmarkController>();
+        auto benchmark_controller = std::make_shared<BenchmarkController>();
 
         R(GET, "/test", benchmark_controller, test);
-
+        /*
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::global_config->setAutoSave(false);
         std::string https_server_host =
