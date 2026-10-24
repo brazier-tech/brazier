@@ -265,7 +265,6 @@ net::awaitable<void> brazier::Server::accept_loop(tcp::acceptor& acceptor) {
         }
 
         if (connection_count_.load(std::memory_order_acquire) >= max_connections_) {
-            Logger::log("Connection limit reached, rejecting", "WARNING");
             boost::system::error_code ignore;
             socket.close(ignore);
             continue;
@@ -296,7 +295,6 @@ net::awaitable<void> brazier::Server::accept_and_dispatch(tcp::acceptor& accepto
         }
 
         if (connection_count_.load(std::memory_order_acquire) >= max_connections_) {
-            Logger::log("Connection limit reached, rejecting", "WARNING");
             boost::system::error_code ignore;
             socket.close(ignore);
             continue;
