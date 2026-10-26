@@ -20,8 +20,7 @@
 #pragma once
 
 #include <boost/asio/io_context.hpp>
-#include <memory>
-#include "vendor/ConfigManager.hpp"
+#include <stdexcept>
 
 namespace brazier {
     class Engine {
@@ -32,6 +31,4 @@ namespace brazier {
     private:
         static boost::asio::io_context*& io_ctx_ptr();
     };
-
-    extern std::shared_ptr<brazier::ConfigManager> global_config;
 }

@@ -24,47 +24,54 @@
 
 TEST(ConfigTest, LoadConfig) {
 	brazier::ConfigManager::initGlobal();
-	bool is_nullptr = brazier::global_config == nullptr;
 
-	EXPECT_FALSE(is_nullptr);
+	bool is_initialized = true;
+	try {
+		brazier::ConfigManager::getGlobal();
+	}
+	catch (const std::runtime_error&) {
+		is_initialized = false;
+	}
+
+	EXPECT_TRUE(is_initialized);
 }
 
 TEST(ConfigTest, GetConfigValue) {
 	brazier::ConfigManager::initGlobal("config_test.json");
-	std::string value = brazier::global_config->get("app_name", "default_app");
+	std::string value = brazier::ConfigManager::getGlobal().get("app_name", "default_app");
 	EXPECT_EQ(value, "brazierApp");
 }
 
 TEST(ConfigTest, SetConfigValue) {
 	brazier::ConfigManager::initGlobal("config_test.json");
-	brazier::global_config->set<std::string>("app_name", "NewLightApp");
+	brazier::ConfigManager::getGlobal().set<std::string>("app_name", "NewLightApp");
 
-	std::string value = brazier::global_config->get("app_name", "default_app");
+	std::string value = brazier::ConfigManager::getGlobal().get("app_name", "default_app");
 
 	EXPECT_EQ(value, "NewLightApp");
 }
 
 TEST(ConfigTest, RemoveConfigValue) {
 	brazier::ConfigManager::initGlobal("config_test.json");
-	brazier::global_config->remove("app_name");
-	std::string value = brazier::global_config->get("app_name", "default_app");
+	brazier::ConfigManager::getGlobal().remove("app_name");
+	std::string value = brazier::ConfigManager::getGlobal().get("app_name", "default_app");
 
 	EXPECT_EQ(value, "default_app");
 }
 
 TEST(ConfigTest, HasConfigValue) {
 	brazier::ConfigManager::initGlobal("config_test.json");
-	brazier::global_config->remove("app_name");
-	bool has_value = brazier::global_config->has("app_name");
+	brazier::ConfigManager::getGlobal().remove("app_name");
+	bool has_value = brazier::ConfigManager::getGlobal().has("app_name");
 
 	EXPECT_FALSE(has_value);
 }
 
 TEST(ConfigTest, GetKeysWithPrefix) {
 	brazier::ConfigManager::initGlobal("config_test.json");
-	brazier::global_config->set("server.host", "0.0.0.0");
-	brazier::global_config->set<int>("server.port", 3502);
-	nlohmann::json keys = brazier::global_config->getNestedJson("server");
+	brazier::ConfigManager::getGlobal().set("server.host", "0.0.0.0");
+	brazier::ConfigManager::getGlobal().set<int>("server.port", 3502);
+	nlohmann::json keys = brazier::ConfigManager::getGlobal().getNestedJson("server");
 
 	EXPECT_EQ(keys["host"], "0.0.0.0");
 	EXPECT_EQ(keys["port"], 3502);
@@ -72,17 +79,17 @@ TEST(ConfigTest, GetKeysWithPrefix) {
 
 TEST(ConfigTest, ClearConfig) {
 	brazier::ConfigManager::initGlobal("config_test.json");
-	brazier::global_config->clear();
-	std::string value = brazier::global_config->get("app_name", "default_app");
+	brazier::ConfigManager::getGlobal().clear();
+	std::string value = brazier::ConfigManager::getGlobal().get("app_name", "default_app");
 
 	EXPECT_EQ(value, "default_app");
 }
 
 TEST(ConfigTest, ReloadConfig) {
 	brazier::ConfigManager::initGlobal("config_test.json");
-	brazier::global_config->set<std::string>("app_name", "TempApp");
-	brazier::global_config->reload();
-	std::string value = brazier::global_config->get("app_name", "default_app");
+	brazier::ConfigManager::getGlobal().set<std::string>("app_name", "TempApp");
+	brazier::ConfigManager::getGlobal().reload();
+	std::string value = brazier::ConfigManager::getGlobal().get("app_name", "default_app");
 
 	EXPECT_EQ(value, "brazierApp");
 }

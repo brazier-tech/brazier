@@ -22,19 +22,23 @@
 
 using namespace brazier;
 
-std::unordered_map<http::verb, std::vector<Route>> Router::routes_;
+std::unordered_map<http::verb, std::vector<Route>>& Router::get_routes() {
+    static std::unordered_map<http::verb, std::vector<Route>> routes;
+    return routes;
+}
 
 void Router::add(http::verb method, const std::string& path,
     std::function<boost::asio::awaitable<void>(const Request&, Response&, const Params&)> handler) {
-    routes_[method].emplace_back(path, std::move(handler));
+    get_routes()[method].emplace_back(path, std::move(handler));
 }
 
 boost::asio::awaitable<void> Router::handle_request(const Request& req, Response& res) {
     auto method = req.method();
     std::string target = std::string(req.target());
+    auto& routes = get_routes(); 
 
-    if (routes_.find(method) != routes_.end()) {
-        for (const auto& route : routes_[method]) {
+    if (routes.find(method) != routes.end()) {
+        for (const auto& route : routes[method]) {
             Params params;
             if (route.match(target, params)) {
                 co_await route.process(req, res, params);

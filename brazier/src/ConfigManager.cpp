@@ -19,10 +19,13 @@
  */
 
 #include "../include/brazier/vendor/ConfigManager.hpp"
-#include "../include/brazier/Engine.hpp"
 #include <sstream>
 
 namespace brazier {
+
+    namespace {
+        std::unique_ptr<brazier::ConfigManager> g_global_config = nullptr;
+    }
 
     void ConfigManager::flattenJson(const std::string& prefix, const json& j,
         std::unordered_map<std::string, std::string>& output) {
@@ -394,24 +397,22 @@ namespace brazier {
         return keys;
     }
 
-    void ConfigManager::initGlobal()
+    void ConfigManager::initGlobal(const std::string& filepath)
     {
         auto configDriver = std::make_shared<brazier::FileDriver>();
         configDriver->setRootPath("./");
         configDriver->initAsync();
 
-        global_config = std::make_shared<ConfigManager>("config.json", configDriver);
-        global_config->load();
+        g_global_config = std::make_unique<ConfigManager>(filepath, configDriver);
+        g_global_config->load();
     }
 
-    void ConfigManager::initGlobal(std::string filepath)
+    ConfigManager& ConfigManager::getGlobal()
     {
-        auto configDriver = std::make_shared<brazier::FileDriver>();
-        configDriver->setRootPath("./");
-        configDriver->initAsync();
-
-        global_config = std::make_shared<ConfigManager>(filepath, configDriver);
-        global_config->load();
+        if (!g_global_config) {
+            throw std::runtime_error("Global config is not initialized. Call initGlobal() first.");
+        }
+        return *g_global_config;
     }
 
     template std::string ConfigManager::getNested<std::string>(const std::string&, const std::string&);

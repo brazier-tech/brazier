@@ -165,8 +165,8 @@ To initialize the global configuration manager, you need to run `ConfigManager::
 int main() {
     ConfigManager::initGlobal();
     
-    std::string host = global_config->get("server.host", "127.0.0.1");
-    int port = global_config->get("server.port", 3501);
+    std::string host = ConfigManager::getGlobal().get("server.host", "127.0.0.1");
+    int port = ConfigManager::getGlobal().get("server.port", 3501);
     
     brazier::Server server(host, port);
     server.initialize();
@@ -512,10 +512,10 @@ keys take priority over everything else and are intended for the test suite.
 int main() {
     try {
         brazier::ConfigManager::initGlobal("config.json");
-        brazier::global_config->setAutoSave(false);
+        brazier::ConfigManager::getGlobal().setAutoSave(false);
 
-        std::string host = brazier::global_config->get("https_server.host", "0.0.0.0");
-        int port = brazier::global_config->get("https_server.port", 8443);
+        std::string host = brazier::ConfigManager::getGlobal().get("https_server.host", "0.0.0.0");
+        int port = brazier::ConfigManager::getGlobal().get("https_server.port", 8443);
 
         brazier::HttpsServer server(host, port);
 

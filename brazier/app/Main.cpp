@@ -32,11 +32,11 @@ int main() {
         R(GET, "/test", benchmark_controller, test);
 
         brazier::ConfigManager::initGlobal("config_test.json");
-        brazier::global_config->setAutoSave(false);
+        brazier::ConfigManager::getGlobal().setAutoSave(false);
         std::string https_server_host =
-            brazier::global_config->get("https_server.host", "0.0.0.0");
+            brazier::ConfigManager::getGlobal().get("https_server.host", "0.0.0.0");
         int https_server_port =
-            brazier::global_config->get("https_server.port", 8443);
+            brazier::ConfigManager::getGlobal().get("https_server.port", 8443);
         brazier::Logger::log("HTTPS server: " + https_server_host + ":" +
             std::to_string(https_server_port), "INFO");
 
@@ -62,12 +62,12 @@ int main() {
 
         return 0;*/
         brazier::ConfigManager::initGlobal("config_test.json");
-        brazier::global_config->setAutoSave(false);
+        brazier::ConfigManager::getGlobal().setAutoSave(false);
 
         std::string server_host =
-            brazier::global_config->get("server.host", "0.0.0.0");
+            brazier::ConfigManager::getGlobal().get("server.host", "0.0.0.0");
         int server_port =
-            brazier::global_config->get("server.port", 3502);
+            brazier::ConfigManager::getGlobal().get("server.port", 3502);
 
         brazier::Logger::log("HTTP server: " + server_host + ":" +
             std::to_string(server_port), "INFO");

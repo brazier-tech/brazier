@@ -37,7 +37,7 @@ bool brazier::HttpsServer::initialize() {
         Logger::init("debug.log");
         Logger::registerSignalHandlers();
 
-        json drivers = global_config->getJson("filesystem.drivers");
+        json drivers = ConfigManager::getGlobal().getJson("filesystem.drivers");
 
         for (auto& [name, cfg] : drivers.items()) {
             if (name == "default") continue;
@@ -49,7 +49,7 @@ bool brazier::HttpsServer::initialize() {
             StorageManager::getInstance().registerDriver(name, driver);
         }
 
-        std::string def = global_config->getNested<std::string>(
+        std::string def = ConfigManager::getGlobal().getNested<std::string>(
             "filesystem.default", "local");
         if (StorageManager::getInstance().hasDriver(def)) {
             StorageManager::getInstance().setDefaultDriver(def);

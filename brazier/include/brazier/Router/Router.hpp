@@ -37,7 +37,7 @@ namespace brazier {
         using Response = http::response<http::string_body>;
         using Params = std::unordered_map<std::string, std::string>;
 
-        static std::unordered_map<http::verb, std::vector<Route>> routes_;
+        static std::unordered_map<http::verb, std::vector<Route>>& get_routes();
 
     public:
         static void add(http::verb method, const std::string& path,

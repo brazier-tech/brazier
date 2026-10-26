@@ -32,7 +32,7 @@ bool brazier::Server::initialize() {
         Logger::init("debug.log");
         Logger::registerSignalHandlers();
 
-        json drivers = global_config->getJson("filesystem.drivers");
+        json drivers = ConfigManager::getGlobal().getJson("filesystem.drivers");
 
         for (auto& [name, cfg] : drivers.items()) {
             if (name == "default") continue;
@@ -44,7 +44,7 @@ bool brazier::Server::initialize() {
             StorageManager::getInstance().registerDriver(name, driver);
         }
 
-        std::string def = global_config->getNested<std::string>("filesystem.default", "local");
+        std::string def = ConfigManager::getGlobal().getNested<std::string>("filesystem.default", "local");
         if (StorageManager::getInstance().hasDriver(def)) {
             StorageManager::getInstance().setDefaultDriver(def);
         }
@@ -116,16 +116,16 @@ const std::string& brazier::Server::getHost() const { return host_; }
 
 void brazier::Server::initializeConnections() {
     try {
-        Queue::connect(global_config->get("nosql.host", "127.0.0.1"),
-            global_config->get("nosql.port", 6379));
+        Queue::connect(ConfigManager::getGlobal().get("nosql.host", "127.0.0.1"),
+            ConfigManager::getGlobal().get("nosql.port", 6379));
     }
     catch (const std::exception& e) {
         Logger::log("Connection to queue failed: " + std::string(e.what()), "ERROR");
     }
 
     try {
-        Cache::connect(global_config->get("redis.host", "127.0.0.1"),
-            global_config->get("redis.port", 6379));
+        Cache::connect(ConfigManager::getGlobal().get("redis.host", "127.0.0.1"),
+            ConfigManager::getGlobal().get("redis.port", 6379));
     }
     catch (const std::exception& e) {
         Logger::log("Connection to NOSQL database failed: " + std::string(e.what()), "ERROR");
@@ -146,7 +146,7 @@ net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {
         socket.set_option(boost::asio::socket_base::keep_alive(true));
 
         net::steady_timer idle_timer(co_await net::this_coro::executor);
-        const auto IDLE_TIMEOUT = std::chrono::seconds(global_config->get("keep-alive-timeout", 60));
+        const auto IDLE_TIMEOUT = std::chrono::seconds(ConfigManager::getGlobal().get("keep-alive-timeout", 60));
         bool timed_out = false;
 
         auto reset_timer = [&]() {

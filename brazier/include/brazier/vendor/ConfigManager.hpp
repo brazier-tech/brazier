@@ -29,6 +29,7 @@
 #include <any>
 #include <string>
 #include <brazier/log/Logger.hpp>
+#include <type_traits>
 
 namespace brazier {
 
@@ -103,7 +104,7 @@ namespace brazier {
         }
 
         std::string get(const std::string key, const char* defaultValue) {
-			return get<std::string>(key, std::string(defaultValue));
+            return get<std::string>(key, std::string(defaultValue));
         }
 
         template<int N>
@@ -147,7 +148,7 @@ namespace brazier {
         bool removeNested(const std::string& path);
         std::vector<std::string> getKeysWithPrefix(const std::string& prefix) const;
 
-        static void initGlobal();
-        static void initGlobal(std::string filepath);
+        static void initGlobal(const std::string& filepath = "config.json");
+        static ConfigManager& getGlobal();
     };
 }

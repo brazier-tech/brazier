@@ -54,13 +54,13 @@ int brazier::HttpsServer::compute_max_header_size(int ram_mb, int max_conn) {
 
 void brazier::HttpsServer::load_common_config_from_global() {
     keep_alive_timeout_ = std::chrono::seconds(
-        global_config->get("protocol.keep_alive_timeout", 60));
+        ConfigManager::getGlobal().get("protocol.keep_alive_timeout", 60));
 
-    server_name_ = global_config->get("protocol.server_name",
+    server_name_ = ConfigManager::getGlobal().get("protocol.server_name",
         std::string("brazier"));
 
-    hsts_enabled_ = global_config->get("https_server.hsts.enabled", true);
-    hsts_header_ = global_config->get("https_server.hsts.header",
+    hsts_enabled_ = ConfigManager::getGlobal().get("https_server.hsts.enabled", true);
+    hsts_header_ = ConfigManager::getGlobal().get("https_server.hsts.header",
         std::string("max-age=31536000"));
 
     static_headers_.clear();
@@ -74,28 +74,28 @@ void brazier::HttpsServer::load_common_config_from_global() {
 void brazier::HttpsServer::load_tls_config_from_global() {
     if (tls_config_from_user_) return;
 
-    tls_.cert_pem = global_config->get("https_server.tls.cert_pem",
+    tls_.cert_pem = ConfigManager::getGlobal().get("https_server.tls.cert_pem",
         std::string(""));
-    tls_.key_pem = global_config->get("https_server.tls.key_pem",
+    tls_.key_pem = ConfigManager::getGlobal().get("https_server.tls.key_pem",
         std::string(""));
 
-    tls_.cert_file = global_config->get("https_server.tls.cert_file",
+    tls_.cert_file = ConfigManager::getGlobal().get("https_server.tls.cert_file",
         std::string("server.crt"));
-    tls_.key_file = global_config->get("https_server.tls.key_file",
+    tls_.key_file = ConfigManager::getGlobal().get("https_server.tls.key_file",
         std::string("server.key"));
-    tls_.ca_file = global_config->get("https_server.tls.ca_file",
+    tls_.ca_file = ConfigManager::getGlobal().get("https_server.tls.ca_file",
         std::string(""));
 
     tls_.require_client_cert =
-        global_config->get("https_server.tls.require_client_cert", false);
+        ConfigManager::getGlobal().get("https_server.tls.require_client_cert", false);
     tls_.verify_client_cert =
-        global_config->get("https_server.tls.verify_client_cert", false);
+        ConfigManager::getGlobal().get("https_server.tls.verify_client_cert", false);
 
     tls_.handshake_timeout = std::chrono::seconds(
-        global_config->get("https_server.tls.handshake_timeout", 15));
+        ConfigManager::getGlobal().get("https_server.tls.handshake_timeout", 15));
 
     try {
-        json conf = global_config->getJson("https_server.tls.conf");
+        json conf = ConfigManager::getGlobal().getJson("https_server.tls.conf");
         if (conf.is_array()) {
             for (const auto& item : conf) {
                 if (!item.is_array() || item.empty() || item.size() > 2) {
@@ -120,11 +120,11 @@ void brazier::HttpsServer::load_limits_from_config() {
     const int ram_mb = platform::get_system_memory_mb();
 
     const int testing_conn =
-        global_config->get("protocol.max_connections_testing", 0);
+        ConfigManager::getGlobal().get("protocol.max_connections_testing", 0);
     const int testing_body =
-        global_config->get("protocol.max_body_size_testing", 0);
+        ConfigManager::getGlobal().get("protocol.max_body_size_testing", 0);
     const int testing_hdr =
-        global_config->get("protocol.max_header_size_testing", 0);
+        ConfigManager::getGlobal().get("protocol.max_header_size_testing", 0);
 
     const bool testing_mode =
         testing_conn > 0 || testing_body > 0 || testing_hdr > 0;
@@ -132,7 +132,7 @@ void brazier::HttpsServer::load_limits_from_config() {
     if (testing_conn > 0) {
         max_connections_ = testing_conn;
     }
-    else if (int v = global_config->get("protocol.max_connections", 0); v > 0) {
+    else if (int v = ConfigManager::getGlobal().get("protocol.max_connections", 0); v > 0) {
         max_connections_ = v;
     }
     else {
@@ -143,7 +143,7 @@ void brazier::HttpsServer::load_limits_from_config() {
     if (testing_body > 0) {
         max_body_size_ = testing_body;
     }
-    else if (int v = global_config->get("protocol.max_body_size", 0); v > 0) {
+    else if (int v = ConfigManager::getGlobal().get("protocol.max_body_size", 0); v > 0) {
         max_body_size_ = v;
     }
     else {
@@ -153,7 +153,7 @@ void brazier::HttpsServer::load_limits_from_config() {
     if (testing_hdr > 0) {
         max_header_size_ = testing_hdr;
     }
-    else if (int v = global_config->get("protocol.max_header_size", 0); v > 0) {
+    else if (int v = ConfigManager::getGlobal().get("protocol.max_header_size", 0); v > 0) {
         max_header_size_ = v;
     }
     else {
@@ -172,8 +172,8 @@ void brazier::HttpsServer::load_limits_from_config() {
 
 void brazier::HttpsServer::initializeConnections() {
     try {
-        Queue::connect(global_config->get("nosql.host", "127.0.0.1"),
-            global_config->get("nosql.port", 6379));
+        Queue::connect(ConfigManager::getGlobal().get("nosql.host", "127.0.0.1"),
+            ConfigManager::getGlobal().get("nosql.port", 6379));
     }
     catch (const std::exception& e) {
         Logger::log("Connection to queue failed: " + std::string(e.what()),
@@ -181,8 +181,8 @@ void brazier::HttpsServer::initializeConnections() {
     }
 
     try {
-        Cache::connect(global_config->get("redis.host", "127.0.0.1"),
-            global_config->get("redis.port", 6379));
+        Cache::connect(ConfigManager::getGlobal().get("redis.host", "127.0.0.1"),
+            ConfigManager::getGlobal().get("redis.port", 6379));
     }
     catch (const std::exception& e) {
         Logger::log("Connection to NOSQL database failed: " +

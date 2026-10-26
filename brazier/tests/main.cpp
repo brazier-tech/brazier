@@ -65,15 +65,15 @@ int main(int argc, char** argv) {
     try {
         testing::InitGoogleTest(&argc, argv);
         brazier::ConfigManager::initGlobal("config_test.json");
-        brazier::global_config->setAutoSave(false);
+        brazier::ConfigManager::getGlobal().setAutoSave(false);
 
         host_global = normalizeHost(
-            brazier::global_config->get("server.host", std::string("127.0.0.1")));
-        port_global = brazier::global_config->get<int>("server.port", 3502);
+            brazier::ConfigManager::getGlobal().get("server.host", std::string("127.0.0.1")));
+        port_global = brazier::ConfigManager::getGlobal().get<int>("server.port", 3502);
 
         https_host_global = normalizeHost(
-            brazier::global_config->get("https_server.host", std::string("127.0.0.1")));
-        https_port_global = brazier::global_config->get<int>("https_server.port", 8443);
+            brazier::ConfigManager::getGlobal().get("https_server.host", std::string("127.0.0.1")));
+        https_port_global = brazier::ConfigManager::getGlobal().get<int>("https_server.port", 8443);
 
         if (kStartHttpServer) {
             g_test_server = std::make_shared<brazier::Server>(host_global, port_global);
