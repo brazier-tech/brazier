@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 cmake_minimum_required(VERSION 3.14)
-project(brazier-core VERSION 0.2.0 LANGUAGES CXX)
+project(brazier-core VERSION 0.2.1 LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -127,28 +127,24 @@ target_precompile_headers(brazier_core_objects PRIVATE
     <memory>
 )
 
-add_library(brazier_core_static STATIC $<TARGET_OBJECTS:brazier_core_objects>)
-add_library(brazier_core_shared SHARED $<TARGET_OBJECTS:brazier_core_objects>)
+add_library(brazier_core $<TARGET_OBJECTS:brazier_core_objects>)
 
-set_target_properties(brazier_core_static PROPERTIES EXPORT_NAME core_static)
-set_target_properties(brazier_core_shared PROPERTIES EXPORT_NAME core_shared)
+set_target_properties(brazier_core PROPERTIES EXPORT_NAME core)
+add_library(brazier::core ALIAS brazier_core)
 
-if(MSVC)
-    set_target_properties(brazier_core_shared PROPERTIES
-        WINDOWS_EXPORT_ALL_SYMBOLS ON
-    )
+if(BUILD_SHARED_LIBS)
+    if(MSVC)
+        set_target_properties(brazier_core PROPERTIES
+            WINDOWS_EXPORT_ALL_SYMBOLS ON
+        )
+    endif()
+    target_compile_definitions(brazier_core PRIVATE brazier_EXPORTS)
+    target_compile_definitions(brazier_core PUBLIC brazier_SHARED)
 endif()
 
-target_compile_definitions(brazier_core_shared PRIVATE brazier_EXPORTS)
-target_compile_definitions(brazier_core_shared PUBLIC brazier_SHARED)
-target_compile_definitions(brazier_core_static PUBLIC)
+target_link_libraries(brazier_core PUBLIC ${LIBRARIES})
 
-set_target_properties(brazier_core_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-target_link_libraries(brazier_core_static PUBLIC ${LIBRARIES})
-target_link_libraries(brazier_core_shared PUBLIC ${LIBRARIES})
-
-export(TARGETS brazier_core_static brazier_core_shared
+export(TARGETS brazier_core
     NAMESPACE brazier::
     FILE "${CMAKE_CURRENT_BINARY_DIR}/brazierTargets.cmake"
 )
@@ -173,32 +169,15 @@ target_compile_definitions(brazier_app PRIVATE
 )
 
 target_link_libraries(brazier_app PRIVATE
-    brazier_core_static
+    brazier_core
     ${LIBRARIES}
-)
-
-add_library(brazier_core INTERFACE)
-set_target_properties(brazier_core PROPERTIES EXPORT_NAME core)
-
-target_link_libraries(brazier_core INTERFACE
-    brazier_core_static
-    brazier_core_shared
-)
-
-install(TARGETS brazier_core_static
-    EXPORT brazierTargets
-    ARCHIVE DESTINATION lib
-)
-
-install(TARGETS brazier_core_shared
-    EXPORT brazierTargets
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-    ARCHIVE DESTINATION lib
 )
 
 install(TARGETS brazier_core
     EXPORT brazierTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
 )
 
 install(DIRECTORY include/ DESTINATION include)
@@ -263,7 +242,7 @@ if(BUILD_TESTS)
     target_compile_features(brazier_tests PRIVATE cxx_std_20)
 
     target_link_libraries(brazier_tests PRIVATE
-        brazier_core_static
+        brazier_core
         GTest::gtest
         GTest::gtest_main
         GTest::gmock
