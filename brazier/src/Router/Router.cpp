@@ -22,6 +22,8 @@
 
 using namespace brazier;
 
+std::unordered_map<http::verb, std::vector<Route>> Router::routes_;
+
 void Router::add(http::verb method, const std::string& path,
     std::function<boost::asio::awaitable<void>(const Request&, Response&, const Params&)> handler) {
     routes_[method].emplace_back(path, std::move(handler));

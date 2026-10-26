@@ -149,29 +149,33 @@ export(TARGETS brazier_core
     FILE "${CMAKE_CURRENT_BINARY_DIR}/brazierTargets.cmake"
 )
 
-add_executable(brazier_app app/Main.cpp)
+option(BUILD_APP "Build brazier demo app" ON)
 
-target_include_directories(brazier_app PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/vendor
-    ${CMAKE_SOURCE_DIR}/Database
-    ${CMAKE_SOURCE_DIR}/Router
-    ${CMAKE_SOURCE_DIR}/App
-    ${CMAKE_SOURCE_DIR}/Storage
-)
+if(BUILD_APP)
+    add_executable(brazier_app app/Main.cpp)
 
-target_compile_features(brazier_app PRIVATE cxx_std_20)
+    target_include_directories(brazier_app PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/vendor
+        ${CMAKE_SOURCE_DIR}/Database
+        ${CMAKE_SOURCE_DIR}/Router
+        ${CMAKE_SOURCE_DIR}/App
+        ${CMAKE_SOURCE_DIR}/Storage
+    )
 
-target_compile_definitions(brazier_app PRIVATE
-    BOOST_ASIO_HAS_CO_AWAIT
-    BOOST_ASIO_HAS_STD_COROUTINE
-)
+    target_compile_features(brazier_app PRIVATE cxx_std_20)
 
-target_link_libraries(brazier_app PRIVATE
-    brazier_core
-    ${LIBRARIES}
-)
+    target_compile_definitions(brazier_app PRIVATE
+        BOOST_ASIO_HAS_CO_AWAIT
+        BOOST_ASIO_HAS_STD_COROUTINE
+    )
+
+    target_link_libraries(brazier_app PRIVATE
+        brazier_core
+        ${LIBRARIES}
+    )
+endif()
 
 install(TARGETS brazier_core
     EXPORT brazierTargets

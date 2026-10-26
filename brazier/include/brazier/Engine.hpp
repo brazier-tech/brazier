@@ -33,5 +33,5 @@ namespace brazier {
         static boost::asio::io_context*& io_ctx_ptr();
     };
 
-    inline std::shared_ptr<brazier::ConfigManager> global_config = nullptr;
+    extern std::shared_ptr<brazier::ConfigManager> global_config;
 }

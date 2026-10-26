@@ -22,6 +22,7 @@
 
 using namespace brazier;
 
+std::unordered_map<std::string, std::string> ENV::env_variables; 
 bool ENV::initialized = false;
 const std::string ENV::env_file_path = "./.env";
 

@@ -20,6 +20,8 @@
 
 #include "../include/brazier/Engine.hpp"
 
+std::shared_ptr<brazier::ConfigManager> brazier::global_config = nullptr;
+
 boost::asio::io_context*& brazier::Engine::io_ctx_ptr() {
     static thread_local boost::asio::io_context* ptr = nullptr;
     return ptr;
