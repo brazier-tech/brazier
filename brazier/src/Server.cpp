@@ -21,8 +21,7 @@
 #include "../include/brazier/server.hpp"
 
 brazier::Server::Server(const std::string& host, unsigned short port)
-    : acceptor_(io_, tcp::endpoint(net::ip::make_address(host), port))
-    , port_(port), host_(host) {
+    : acceptor_(io_, tcp::endpoint(net::ip::make_address(host), port)), port_(port), host_(host) {
     acceptor_.set_option(tcp::acceptor::reuse_address(true));
     work_guard_ = std::make_unique<net::executor_work_guard<net::io_context::executor_type>>(io_.get_executor());
 }
@@ -78,14 +77,18 @@ void brazier::Server::run() {
         }
 
         shutdown_flag_.store(false, std::memory_order_release);
+
         stats_thread_ = std::thread([this] {
             while (!shutdown_flag_.load(std::memory_order_acquire)) {
                 std::this_thread::sleep_for(10s);
-                if (shutdown_flag_.load(std::memory_order_acquire)) break;
+
+                if (shutdown_flag_.load(std::memory_order_acquire)) 
+                    break;
+
                 Logger::log("STATS - Active connections: " + std::to_string(connection_count_.load()) +
                     ", Total requests: " + std::to_string(total_requests_.load()), "INFO");
             }
-            });
+        });
 
         for (auto& t : threads_) {
             if (t.joinable()) {
@@ -146,7 +149,7 @@ net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {
         socket.set_option(boost::asio::socket_base::keep_alive(true));
 
         net::steady_timer idle_timer(co_await net::this_coro::executor);
-        const auto IDLE_TIMEOUT = std::chrono::seconds(ConfigManager::getGlobal().get("keep-alive-timeout", 60));
+        const auto IDLE_TIMEOUT = std::chrono::seconds(ConfigManager::getGlobal().get("keep-alive-timeout", keep_alive_timeout_));
         bool timed_out = false;
 
         auto reset_timer = [&]() {

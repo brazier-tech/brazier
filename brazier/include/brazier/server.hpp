@@ -67,6 +67,12 @@ namespace brazier {
         std::thread stats_thread_;                   
         std::atomic<bool> shutdown_flag_{ false };
 
+        std::chrono::seconds keep_alive_timeout_{ 60 };
+
+        int max_body_size_ = 1024 * 1024;
+        int max_header_size_ = 8 * 1024;
+        int max_connections_ = 10000;
+
     public:
         Server(const std::string& host, unsigned short port);
 
@@ -77,6 +83,10 @@ namespace brazier {
 
         unsigned short getPort() const;
         const std::string& getHost() const;
+
+        int getMaxConnections() const { return max_connections_; }
+        int getMaxBodySize()    const { return max_body_size_; }
+        int getMaxHeaderSize()  const { return max_header_size_; }
 
     private:
         void initializeConnections();
