@@ -27,9 +27,12 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/asio/ip/tcp.hpp>
+
 #include "../../../include/brazier/Core"
 #include "../../../include/brazier/Http"
+
 #include "main.h"
+#include "tcp_test_client.hpp"
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -91,10 +94,15 @@ bool IsServerRunning() {
     }
 }
 
+std::string baseUrl() {
+    return "http://" + host_global + ":" + std::to_string(port_global);
+}
+
 class RoutingTest : public ::testing::Test {
 protected:
     static void SetUpTestSuite() {
         server_available_ = IsServerRunning();
+        http_url_base = baseUrl();    
     }
 
     void SetUp() override {
@@ -104,15 +112,13 @@ protected:
     }
 
     static bool server_available_;
+    static std::string http_url_base;
 };
 
 bool RoutingTest::server_available_ = false;
+std::string RoutingTest::http_url_base = "";
 
 TEST_F(RoutingTest, AddRouteAndGet) {
-    std::string host = host_global;
-    std::string port = std::to_string(port_global);
-    std::string base_url = "http://" + host + ":" + port;
-
     auto test_controller = std::make_shared<TestController>();
 
     R(GET, "/test", test_controller, show);
@@ -127,7 +133,7 @@ TEST_F(RoutingTest, AddRouteAndGet) {
 
     try {
         auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
-            co_return co_await client.get(base_url + "/test");
+            co_return co_await client.get(http_url_base + "/test");
             });
 
         EXPECT_EQ(response.result_int(), 200);
@@ -140,17 +146,13 @@ TEST_F(RoutingTest, AddRouteAndGet) {
 }
 
 TEST_F(RoutingTest, JsonResponse) {
-    std::string host = host_global;
-    std::string port = std::to_string(port_global);
-    std::string base_url = "http://" + host + ":" + port;
-
     brazier::HttpClient client;
     client.set_verify_ssl(false);
     client.set_timeout(std::chrono::seconds(5));
 
     try {
         auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
-            co_return co_await client.get(base_url + "/test/json");
+            co_return co_await client.get(http_url_base + "/test/json");
             });
 
         EXPECT_EQ(response.result_int(), 200);
@@ -166,10 +168,6 @@ TEST_F(RoutingTest, JsonResponse) {
 }
 
 TEST_F(RoutingTest, PostWithBody) {
-    std::string host = host_global;
-    std::string port = std::to_string(port_global);
-    std::string base_url = "http://" + host + ":" + port;
-
     brazier::HttpClient client;
     client.set_verify_ssl(false);
     client.set_timeout(std::chrono::seconds(5));
@@ -182,7 +180,7 @@ TEST_F(RoutingTest, PostWithBody) {
 
     try {
         auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
-            co_return co_await client.post(base_url + "/test/echo", request_body);
+            co_return co_await client.post(http_url_base + "/test/echo", request_body);
             });
 
         EXPECT_EQ(response.result_int(), 200);
@@ -199,17 +197,13 @@ TEST_F(RoutingTest, PostWithBody) {
 }
 
 TEST_F(RoutingTest, NotFound) {
-    std::string host = host_global;
-    std::string port = std::to_string(port_global);
-    std::string base_url = "http://" + host + ":" + port;
-
     brazier::HttpClient client;
     client.set_verify_ssl(false);
     client.set_timeout(std::chrono::seconds(5));
 
     try {
         auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
-            co_return co_await client.get(base_url + "/nonexistent");
+            co_return co_await client.get(http_url_base + "/nonexistent");
             });
 
         EXPECT_EQ(response.result_int(), 404);
@@ -220,10 +214,6 @@ TEST_F(RoutingTest, NotFound) {
 }
 
 TEST_F(RoutingTest, ResponseTime) {
-    std::string host = host_global;
-    std::string port = std::to_string(port_global); 
-    std::string base_url = "http://" + host + ":" + port;
-
     brazier::HttpClient client;
     client.set_verify_ssl(false);
     client.set_timeout(std::chrono::seconds(5));
@@ -232,7 +222,7 @@ TEST_F(RoutingTest, ResponseTime) {
 
     try {
         auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
-            co_return co_await client.get(base_url + "/test");
+            co_return co_await client.get(http_url_base + "/test");
             });
 
         auto end = std::chrono::steady_clock::now();
@@ -247,10 +237,6 @@ TEST_F(RoutingTest, ResponseTime) {
 }
 
 TEST_F(RoutingTest, MultipleRequests) {
-    std::string host = host_global;
-    std::string port = std::to_string(port_global);
-    std::string base_url = "http://" + host + ":" + port;
-
     brazier::HttpClient client;
     client.set_verify_ssl(false);
     client.set_timeout(std::chrono::seconds(5));
@@ -262,7 +248,7 @@ TEST_F(RoutingTest, MultipleRequests) {
         auto future = boost::asio::co_spawn(
             io_context,
             [&]() -> boost::asio::awaitable<brazier::Response> {
-                co_return co_await client.get(base_url + "/test");
+                co_return co_await client.get(http_url_base + "/test");
             },
             boost::asio::use_future
         );
@@ -284,4 +270,30 @@ TEST_F(RoutingTest, MultipleRequests) {
 
     io_context.stop();
     io_thread.join();
+}
+
+TEST_F(RoutingTest, PayloadTooLarge) {
+    ASSERT_NE(g_test_server, nullptr);
+    const std::size_t limit = g_test_server->getMaxBodySize();
+    const std::size_t body_size = limit * 4;
+
+    tcp_test::TcpClient c(host_global, port_global);
+    ASSERT_TRUE(c.connect());
+
+    std::string headers =
+        "POST /ext/test HTTP/1.1\r\n"
+        "Host: " + host_global + "\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: " + std::to_string(body_size) + "\r\n"
+        "Connection: close\r\n\r\n";
+
+    ASSERT_TRUE(c.send_raw(headers));
+    auto res = c.read_response(5);
+
+    if (res.has_value()) {
+        EXPECT_EQ(res->result_int(), 413);
+    }
+    else {
+        EXPECT_TRUE(c.is_connection_closed(2)) << "No response and connection not closed";
+    }
 }
