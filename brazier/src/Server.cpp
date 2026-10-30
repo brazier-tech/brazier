@@ -149,7 +149,7 @@ net::awaitable<void> brazier::Server::handle_connection(tcp::socket socket) {
         socket.set_option(boost::asio::socket_base::keep_alive(true));
 
         net::steady_timer idle_timer(co_await net::this_coro::executor);
-        const auto IDLE_TIMEOUT = std::chrono::seconds(ConfigManager::getGlobal().get("keep-alive-timeout", keep_alive_timeout_));
+        const auto IDLE_TIMEOUT = std::chrono::seconds(ConfigManager::getGlobal().get("keep-alive-timeout", keep_alive_timeout_.count()));
         bool timed_out = false;
 
         auto reset_timer = [&]() {
