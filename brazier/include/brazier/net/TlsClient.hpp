@@ -48,15 +48,17 @@ namespace brazier {
         std::unique_ptr<ssl::stream<beast::tcp_stream>> stream;
 
         TlsClient(const std::string& host, unsigned short port, bool with_client_cert = false, const std::string& cert = "", const std::string& key = "");
-        
+
         bool send_raw(const std::string& data);
         bool is_connection_closed(int timeout_sec = kSocketTimeoutSec);
 
         std::optional<http::response<http::string_body>> read_response(int timeout_sec = kSocketTimeoutSec);
 
 
-        private:
-            std::string   host_;
-            unsigned short port_;
-            static inline constexpr int kSocketTimeoutSec = 5;
+    private:
+        std::string   host_;
+        unsigned short port_;
+        static inline constexpr int kSocketTimeoutSec = 5;
     };
+
+}

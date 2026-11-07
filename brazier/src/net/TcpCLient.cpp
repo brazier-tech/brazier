@@ -38,7 +38,7 @@ bool brazier::TcpClient::send_raw(const std::string& data) {
     return true;
 }
 
-std::optional<brazier::http::response<brazier::http::string_body>> brazier::TcpClient::read_response(int timeout_sec = 10) {
+std::optional<brazier::http::response<brazier::http::string_body>> brazier::TcpClient::read_response(int timeout_sec) {
     if (!socket_.is_open())
         return std::nullopt;
 
