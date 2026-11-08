@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 cmake_minimum_required(VERSION 3.14)
-project(brazier-core VERSION 0.2.1 LANGUAGES CXX)
+project(brazier-core VERSION 0.2.2 LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -94,7 +94,7 @@ brazier_hide_platform(Windows)
 
 add_library(brazier_core_objects OBJECT ${PROJECT_SOURCES})
 
-target_link_libraries(brazier_core_objects PUBLIC Boost::boost)
+target_link_libraries(brazier_core_objects PUBLIC ${LIBRARIES})
 
 target_include_directories(brazier_core_objects PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
