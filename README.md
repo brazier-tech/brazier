@@ -5,39 +5,28 @@ The framework combines the power of Boost.Asio with modern C++20/23 features.
 
 ## Features
 
-- Full asynchrony based on Boost.Asio coroutines
-
-- MVC architecture with clear separation of concerns
-
-- Built-in database migration system
-
-- WebSockets technology support
-
-- HTTPS / TLS support with SNI, ALPN-ready, mTLS
-
-- High performance with minimal overhead
+- **Full asynchrony** based on Boost.Asio coroutines
+- **MVC architecture** with clear separation of concerns
+- **Built-in database migration** system
+- **WebSockets** technology support
+- **HTTPS / TLS** support with SNI, ALPN-ready, mTLS
+- **High performance** with minimal overhead
 
 ## Ecosystem & Repositories
 
 The framework is split into three independent modules, each with its own repository and vcpkg port:
 
 - brazier-core — The core framework. Includes routing, HTTP/HTTPS server implementation, WebSockets, and the main asynchronous engine based on Boost.Asio.
-
 - brazier-orm — The Object-Relational Mapping (ORM) module. Handles database connections (PostgreSQL), models, queries, and schema migrations.
-
 - brazier-logger — A fast and thread-safe logging library used internally by the core and ORM, also available for your application code.
 
 ## Requirements
 
-PostgreSQL 12+ (for database operations)
-
-CMake 3.14+ (build system)
-
-vcpkg (C++ dependency manager)
-
-C++ compiler with C++20 support (GCC 10+, Clang 10+, MSVC 2019 16.8+)
-
-config.json with environment configuration
+- **PostgreSQL** 12+ (for database operations)
+- **CMake** 3.14+ (build system)
+- **vcpkg** (C++ dependency manager)
+- **C++ compiler** with C++20 support (GCC 10+, Clang 10+, MSVC 2019 16.8+)
+- **config.json** with environment configuration
 
 ## Project structure
 
