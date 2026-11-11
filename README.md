@@ -5,23 +5,39 @@ The framework combines the power of Boost.Asio with modern C++20/23 features.
 
 ## Features
 
-- **Full asynchrony** based on Boost.Asio coroutines
-- **MVC architecture** with clear separation of concerns
-- **Built-in database migration** system
-- **WebSockets** technology support
-- **HTTPS / TLS** support with SNI, ALPN-ready, mTLS
-- **High performance** with minimal overhead
+- Full asynchrony based on Boost.Asio coroutines
+
+- MVC architecture with clear separation of concerns
+
+- Built-in database migration system
+
+- WebSockets technology support
+
+- HTTPS / TLS support with SNI, ALPN-ready, mTLS
+
+- High performance with minimal overhead
+
+## Ecosystem & Repositories
+
+The framework is split into three independent modules, each with its own repository and vcpkg port:
+
+- brazier-core — The core framework. Includes routing, HTTP/HTTPS server implementation, WebSockets, and the main asynchronous engine based on Boost.Asio.
+
+- brazier-orm — The Object-Relational Mapping (ORM) module. Handles database connections (PostgreSQL), models, queries, and schema migrations.
+
+- brazier-logger — A fast and thread-safe logging library used internally by the core and ORM, also available for your application code.
 
 ## Requirements
 
-### **Required components:**
+PostgreSQL 12+ (for database operations)
 
-- **PostgreSQL** 12+ (for database operations)
-- **CMake** 3.14+ (build system)
-- **vcpkg** (C++ dependency manager)
-- **C++ compiler** with C++20 support (GCC 10+, Clang 10+, MSVC 2019 16.8+)
-- **config.json** with environment configuration
-- **Brazier libraries** (pre-built)
+CMake 3.14+ (build system)
+
+vcpkg (C++ dependency manager)
+
+C++ compiler with C++20 support (GCC 10+, Clang 10+, MSVC 2019 16.8+)
+
+config.json with environment configuration
 
 ## Project structure
 
@@ -31,16 +47,32 @@ your_project/
 ├── CMakeLists.txt               # Build file
 ├── vcpkg.json                   # vcpkg dependencies
 ├── your_project/
-│   └── Proj.cpp           # Main application file
-└── include/                    # Header files
+│   └── Proj.cpp                 # Main application file
+└── include/                     # Header files
 ```
 
 ## Configuration files
 
-### CMakeLists.txt
+The framework is modular, you can include only the components you need.
+
+vcpkg.json example with full framework:
+
+```json
+{
+  "name": "your-project",
+  "version": "1.0.0",
+  "dependencies": [
+    "brazier-core",
+    "brazier-orm",
+    "brazier-logger"
+  ]
+}
+```
+
+CMakeLists.txt
 
 ```cmake
-cmake_minimum_required(VERSION 4.2)
+cmake_minimum_required(VERSION 3.14)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(PROJECT_NAME "brazier_docs")
@@ -55,7 +87,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 if(MSVC)
     add_compile_options(/utf-8)
 endif()
-find_package(brazier CONFIG REQUIRED COMPONENTS core orm logger)                 
+
+find_package(brazier-core CONFIG REQUIRED)
+find_package(brazier-orm CONFIG REQUIRED)
+find_package(brazier-logger CONFIG REQUIRED)
 
 file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
@@ -67,31 +102,21 @@ add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp ${APP_SOURCES})
 add_executable("init_orm" utils/init_orm.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
-    brazier::brazier
+    brazier::core
+    brazier::orm
+    brazier::logger
 )
 
 target_link_libraries("init_orm" PRIVATE 
-    brazier::brazier
+    brazier::core
+    brazier::orm
+    brazier::logger
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
 )
 ```
-
-### vcpkg.json
-
-```json
-{
-  "name": "your_project",
-  "version": "1.0.0",
-  "dependencies": [
-    "brazier"
-  ]
-}
-```
-
-Add all the other packages you need to the end of the list
 
 ## Brazier configuration
 
