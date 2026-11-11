@@ -61,49 +61,21 @@ vcpkg.json example with full framework:
 CMakeLists.txt
 
 ```cmake
-cmake_minimum_required(VERSION 3.14)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(PROJECT_NAME "brazier_docs")
-project(${PROJECT_NAME} VERSION 1.0.0 LANGUAGES CXX)
+project(your_porject LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-if(MSVC)
-    add_compile_options(/utf-8)
-endif()
 
 find_package(brazier-core CONFIG REQUIRED)
 find_package(brazier-orm CONFIG REQUIRED)
 find_package(brazier-logger CONFIG REQUIRED)
 
-file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_SOURCE_DIR}/include/*.hpp"
-)
+add_executable(your_porject main.cpp)
 
-add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp ${APP_SOURCES})        
-
-add_executable("init_orm" utils/init_orm.cpp)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE 
+target_link_libraries(your_porject PRIVATE 
     brazier::core
     brazier::orm
     brazier::logger
-)
-
-target_link_libraries("init_orm" PRIVATE 
-    brazier::core
-    brazier::orm
-    brazier::logger
-)
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
 )
 ```
 
