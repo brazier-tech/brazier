@@ -43,22 +43,24 @@ namespace brazier {
 
     class TlsClient {
     public:
-        net::io_context io;
-        ssl::context    ctx;
-        std::unique_ptr<ssl::stream<beast::tcp_stream>> stream;
+        TlsClient(const std::string& host, unsigned short port);
 
-        TlsClient(const std::string& host, unsigned short port, bool with_client_cert = false, const std::string& cert = "", const std::string& key = "");
+        void set_ca(const std::string& ca_file);
+        void set_client_cert(const std::string& cert_file, const std::string& key_file);
 
+        bool connect();
         bool send_raw(const std::string& data);
-        bool is_connection_closed(int timeout_sec = kSocketTimeoutSec);
-
-        std::optional<http::response<http::string_body>> read_response(int timeout_sec = kSocketTimeoutSec);
-
+        bool is_connection_closed(std::chrono::milliseconds timeout = std::chrono::seconds(2));
+        
+        std::optional<http::response<http::string_body>> read_response(std::chrono::milliseconds timeout = std::chrono::seconds(5));
 
     private:
-        std::string   host_;
+        std::string host_;
         unsigned short port_;
-        static inline constexpr int kSocketTimeoutSec = 5;
+        net::io_context io;
+        ssl::context ctx{ ssl::context::tls_client };
+        std::unique_ptr<ssl::stream<beast::tcp_stream>> stream;
+		std::chrono::milliseconds kSocketTimeoutSec = std::chrono::seconds(5);
     };
 
 }

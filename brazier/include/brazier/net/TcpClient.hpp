@@ -41,8 +41,19 @@ namespace brazier {
     using tcp = net::ip::tcp;
 
     class TcpClient {
+		std::chrono::microseconds timeout_;
+
     public:
-        TcpClient(std::string host, uint16_t port);
+
+        class timeout_exception : public std::runtime_error {
+        public:
+            using base = std::runtime_error;
+
+            explicit timeout_exception(const std::string& _Message) : base(_Message) {}
+            explicit timeout_exception(const char* _Message) : base(_Message) {}
+        };
+
+        TcpClient(std::string host, uint16_t port, std::chrono::microseconds timeout = std::chrono::seconds(5));
 
         bool connect();
         bool send_raw(const std::string& data);

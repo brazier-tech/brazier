@@ -20,14 +20,53 @@
 
 #include "../../include/brazier/net/TcpClient.hpp"
 
-brazier::TcpClient::TcpClient(std::string host, uint16_t port) : host_(std::move(host)), port_(port), socket_(io_) {}
+brazier::TcpClient::TcpClient(std::string host, uint16_t port, std::chrono::microseconds timeout) 
+    : host_(std::move(host)), port_(port), timeout_(timeout), socket_(io_) {}
 
 bool brazier::TcpClient::connect() {
     tcp::resolver resolver(io_);
-    auto results = resolver.resolve(host_, std::to_string(port_));
-    net::connect(socket_, results);
+    boost::system::error_code ec;
 
-    return true;
+    auto endpoints = resolver.resolve(host_, std::to_string(port_), ec);
+
+    if (ec)
+        throw boost::system::system_error(ec, "resolve failed");
+
+    auto deadline = std::chrono::steady_clock::now() + timeout_;
+
+    for (const auto& endpoint : endpoints) {
+        if (std::chrono::steady_clock::now() >= deadline)
+            break;
+
+        socket_.close(ec);
+        ec.clear();
+
+        bool done = false;
+        boost::system::error_code op_ec;
+
+        socket_.async_connect(endpoint, [&](const boost::system::error_code& error) {
+            op_ec = error;
+            done = true;
+            });
+
+        while (!done) {
+            if (std::chrono::steady_clock::now() >= deadline) {
+                socket_.close();
+                io_.restart();
+
+                throw timeout_exception("connect timeout to " + host_ + ":" + std::to_string(port_));
+            }
+
+            io_.run_one();
+        }
+
+        if (!op_ec)
+            return true;
+
+        ec = op_ec;
+    }
+
+    throw boost::system::system_error(ec ? ec : boost::asio::error::timed_out, "connect failed to " + host_ + ":" + std::to_string(port_));
 }
 
 bool brazier::TcpClient::send_raw(const std::string& data) {
@@ -56,8 +95,6 @@ std::optional<brazier::http::response<brazier::http::string_body>> brazier::TcpC
 
         if (ec != net::error::would_block && ec != net::error::try_again)
             return std::nullopt;
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
     return std::nullopt;

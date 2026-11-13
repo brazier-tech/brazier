@@ -20,57 +20,48 @@
 
 #include "../../include/brazier/net/TlsClient.hpp"
 
-brazier::TlsClient::TlsClient(const std::string& host, unsigned short port, bool with_client_cert, const std::string& cert, const std::string& key)
+brazier::TlsClient::TlsClient(const std::string& host, unsigned short port)
 : host_(host), port_(port), ctx(ssl::context::tls_client) {
     ctx.set_verify_mode(ssl::verify_none);
-
-    if (with_client_cert) {
-        ctx.use_certificate_chain_file(cert);
-        ctx.use_private_key_file(key, ssl::context::pem);
-        tcp::resolver resolver(io);
-        auto results = resolver.resolve(host_, std::to_string(port_));
-
-        beast::get_lowest_layer(*stream).expires_after(std::chrono::seconds(kSocketTimeoutSec));
-        beast::get_lowest_layer(*stream).connect(results);
-        beast::get_lowest_layer(*stream).expires_never();
-        stream->handshake(ssl::stream_base::client);
-    }
 }
 
-bool brazier::TlsClient::send_raw(const std::string& data) {
-    beast::get_lowest_layer(*stream).expires_after(std::chrono::seconds(kSocketTimeoutSec));
-    net::write(*stream, net::buffer(data));
+void brazier::TlsClient::set_ca(const std::string& ca_file) {
+    ctx.load_verify_file(ca_file);
+    ctx.set_verify_mode(ssl::verify_peer);
+}
 
+void brazier::TlsClient::set_client_cert(const std::string& cert_file,
+    const std::string& key_file) {
+    ctx.use_certificate_chain_file(cert_file);
+    ctx.use_private_key_file(key_file, ssl::context::pem);
+}
+
+bool brazier::TlsClient::connect() {
+    stream = std::make_unique<ssl::stream<beast::tcp_stream>>(io, ctx);
+
+    tcp::resolver resolver(io);
+    auto results = resolver.resolve(host_, std::to_string(port_));
+
+    beast::get_lowest_layer(*stream).expires_after(kSocketTimeoutSec);
+    beast::get_lowest_layer(*stream).connect(results);
+    beast::get_lowest_layer(*stream).expires_never();
+    stream->handshake(ssl::stream_base::client);
     return true;
 }
 
-std::optional<http::response<http::string_body>> brazier::TlsClient::read_response(int timeout_sec) {
-    beast::flat_buffer buffer;
-    http::response<http::string_body> res;
-    beast::get_lowest_layer(*stream).expires_after(std::chrono::seconds(timeout_sec));
-    http::read(*stream, buffer, res);
-
-    return res;
-}
-
-bool brazier::TlsClient::is_connection_closed(int timeout_sec) {
-    if (!stream)
+bool brazier::TlsClient::is_connection_closed(std::chrono::milliseconds timeout) {
+    if (!stream) 
         return true;
 
-    beast::get_lowest_layer(*stream).expires_after(std::chrono::seconds(timeout_sec));
+    beast::get_lowest_layer(*stream).expires_after(timeout);
     char c;
     beast::error_code ec;
-    auto n = stream->read_some(net::buffer(&c, 1), ec);
-    
-    if (ec == net::error::eof || ec == net::error::connection_reset ||
-        ec == ssl::error::stream_truncated || ec == beast::error::timeout) {
-        return true;
-    }
-    
-    if (ec == net::error::timed_out)
+    stream->read_some(net::buffer(&c, 1), ec);
+
+    if (!ec) 
         return false;
-    
-    if (!ec && n > 0)
+
+    if (ec == beast::error::timeout)
         return false;
     
     return true;
