@@ -20,9 +20,6 @@
 
 #include "main.h"
 
-constexpr bool kStartHttpServer = true;
-constexpr bool kStartHttpsServer = false;
-
 std::shared_ptr<brazier::Server>      g_test_server;
 std::shared_ptr<brazier::HttpsServer> g_test_https_server;
 std::atomic<bool> g_server_ready{ false };
@@ -61,18 +58,23 @@ namespace {
 
 } 
 
+using json = nlohmann::json;
+
 int main(int argc, char** argv) {
+    setlocale(LC_ALL, ".ACP");
+
     try {
         testing::InitGoogleTest(&argc, argv);
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::ConfigManager::getGlobal().setAutoSave(false);
 
-        host_global = normalizeHost(
-            brazier::ConfigManager::getGlobal().get("server.host", std::string("127.0.0.1")));
+        bool kStartHttpServer = true;
+		bool kStartHttpsServer = brazier::ConfigManager::getGlobal().getNested<bool>("https_server.enabled", false);
+
+        host_global = normalizeHost(brazier::ConfigManager::getGlobal().get("server.host", std::string("127.0.0.1")));
         port_global = brazier::ConfigManager::getGlobal().get<int>("server.port", 3502);
 
-        https_host_global = normalizeHost(
-            brazier::ConfigManager::getGlobal().get("https_server.host", std::string("127.0.0.1")));
+        https_host_global = normalizeHost(brazier::ConfigManager::getGlobal().get("https_server.host", std::string("127.0.0.1")));
         https_port_global = brazier::ConfigManager::getGlobal().get<int>("https_server.port", 8443);
 
         if (kStartHttpServer) {
@@ -81,8 +83,10 @@ int main(int argc, char** argv) {
                 try {
                     if (!g_test_server->initialize()) {
                         brazier::Logger::log("Failed to init HTTP test server", "ERROR");
+
                         return;
                     }
+
                     g_server_ready = true;
                     brazier::Logger::log("HTTP test server initialized", "INFO");
                     g_test_server->run();
@@ -99,8 +103,7 @@ int main(int argc, char** argv) {
         }
 
         if (kStartHttpsServer) {
-            g_test_https_server = std::make_shared<brazier::HttpsServer>(
-                https_host_global, https_port_global);
+            g_test_https_server = std::make_shared<brazier::HttpsServer>(https_host_global, https_port_global);
             g_https_server_thread = std::thread([]() {
                 try {
                     if (!g_test_https_server->initialize()) {
