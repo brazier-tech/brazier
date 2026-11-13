@@ -46,6 +46,7 @@ bool brazier::TlsClient::connect() {
     beast::get_lowest_layer(*stream).connect(results);
     beast::get_lowest_layer(*stream).expires_never();
     stream->handshake(ssl::stream_base::client);
+
     return true;
 }
 
@@ -65,4 +66,36 @@ bool brazier::TlsClient::is_connection_closed(std::chrono::milliseconds timeout)
         return false;
     
     return true;
+}
+
+bool brazier::TlsClient::send_raw(const std::string& data) {
+	if (!stream)
+		return false;
+
+	beast::get_lowest_layer(*stream).expires_after(kSocketTimeoutSec);
+	beast::error_code ec;
+	net::write(*stream, net::buffer(data), ec);
+
+	if (ec)
+		return false;
+
+	return true;
+}
+
+std::optional<http::response<http::string_body>> brazier::TlsClient::read_response(std::chrono::milliseconds timeout) {
+	if (!stream)
+		return std::nullopt;
+
+	beast::get_lowest_layer(*stream).expires_after(timeout);
+
+	boost::beast::flat_buffer buffer;
+	http::response<http::string_body> res;
+	beast::error_code ec;
+
+	http::read(*stream, buffer, res, ec);
+
+	if (ec)
+		return std::nullopt;
+
+	return res;
 }

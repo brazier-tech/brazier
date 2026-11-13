@@ -38,3 +38,36 @@ TEST_F(TlsClientTest, ConnectWithCaVerifiesServer) {
 
 	EXPECT_NO_THROW(client.connect());
 }
+
+TEST_F(TlsClientTest, ConnectWithInvalidCaFails) {
+	brazier::TlsClient client(kTestHost, kTestPort);
+	client.set_ca("app/certs/invalid_ca.crt");
+	EXPECT_THROW(client.connect(), std::runtime_error);
+}
+
+TEST_F(TlsClientTest, SendRawData) {
+	brazier::TlsClient client(kTestHost, kTestPort);
+	client.set_ca(ca_cert());
+
+	EXPECT_NO_THROW(client.connect());
+
+	std::string request = "GET / HTTP/1.1\r\nHost: " + kTestHost + "\r\nConnection: close\r\n\r\n";
+
+	EXPECT_NO_THROW(client.send_raw(request));
+}
+
+TEST_F(TlsClientTest, ReadResponse) {
+	brazier::TlsClient client(kTestHost, kTestPort);
+	client.set_ca(ca_cert());
+
+	EXPECT_NO_THROW(client.connect());
+
+	std::string request = "GET / HTTP/1.1\r\nHost: " + kTestHost + "\r\nConnection: close\r\n\r\n";
+
+	EXPECT_NO_THROW(client.send_raw(request));
+
+	auto response = client.read_response();
+
+	EXPECT_TRUE(response.has_value());
+	EXPECT_EQ(response->result_int(), 404);
+}

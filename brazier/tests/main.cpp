@@ -20,9 +20,6 @@
 
 #include "main.h"
 
-constexpr bool kStartHttpServer = true;
-constexpr bool kStartHttpsServer = false;
-
 std::shared_ptr<brazier::Server>      g_test_server;
 std::shared_ptr<brazier::HttpsServer> g_test_https_server;
 std::atomic<bool> g_server_ready{ false };
@@ -61,6 +58,8 @@ namespace {
 
 } 
 
+using json = nlohmann::json;
+
 int main(int argc, char** argv) {
     setlocale(LC_ALL, ".ACP");
 
@@ -68,6 +67,9 @@ int main(int argc, char** argv) {
         testing::InitGoogleTest(&argc, argv);
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::ConfigManager::getGlobal().setAutoSave(false);
+
+        bool kStartHttpServer = true;
+		bool kStartHttpsServer = brazier::ConfigManager::getGlobal().getNested<bool>("https_server.enabled", false);
 
         host_global = normalizeHost(brazier::ConfigManager::getGlobal().get("server.host", std::string("127.0.0.1")));
         port_global = brazier::ConfigManager::getGlobal().get<int>("server.port", 3502);
