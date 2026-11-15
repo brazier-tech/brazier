@@ -13,7 +13,7 @@ For any usage questions, [ask a question in a discussion](https://github.com/bra
 
 ### Suggesting new features
 
-If you are here to suggest a new feature, first [suggest it in a discussion](https://github.com/brazier-tech/brazier/discussions/new?category=ideas). Before posting, check whether someone has already suggested a similar feature. From there, we will discuss the feature's use cases and then decide how it could be implemented.
+If you are here to suggest a new feature, first [suggest it in a discussion](https://github.com/brazier-tech/brazier/discussions/new?category=ideas). Please avoid submitting a duplicate request by checking if someone has already suggested a similar feature. From there, we will discuss the feature's use cases and then decide how it could be implemented.
 
 ### Committing
 
