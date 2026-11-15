@@ -49,8 +49,8 @@ namespace brazier {
         public:
             using base = std::runtime_error;
 
-            explicit timeout_exception(const std::string& _Message) : base(_Message) {}
-            explicit timeout_exception(const char* _Message) : base(_Message) {}
+            explicit timeout_exception(const std::string& _Message);
+            explicit timeout_exception(const char* _Message);
         };
 
         TcpClient(std::string host, uint16_t port, std::chrono::microseconds timeout = std::chrono::seconds(5));
@@ -62,9 +62,26 @@ namespace brazier {
         std::optional<http::response<http::string_body>> read_response(int timeout_sec = 10);
 
     private:
+        struct State {
+            enum status { 
+                pending, 
+                connected, 
+                done, 
+                failed, 
+                timed_out 
+            } 
+
+            st = pending;
+            boost::system::error_code ec;
+            boost::beast::flat_buffer buffer;
+            http::response<http::string_body> res;
+        };
+
         std::string host_;
         uint16_t port_;
         net::io_context io_;
         tcp::socket socket_;
+
+        void async_resolve(tcp::resolver& resolver, std::shared_ptr<State> state);
     };
 }

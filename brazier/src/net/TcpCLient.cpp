@@ -25,48 +25,39 @@ brazier::TcpClient::TcpClient(std::string host, uint16_t port, std::chrono::micr
 
 bool brazier::TcpClient::connect() {
     tcp::resolver resolver(io_);
-    boost::system::error_code ec;
+    net::steady_timer timer(io_);
 
-    auto endpoints = resolver.resolve(host_, std::to_string(port_), ec);
+    auto state = std::make_shared<State>();
 
-    if (ec)
-        throw boost::system::system_error(ec, "resolve failed");
+    timer.expires_after(timeout_);
+    timer.async_wait([state, this, &resolver](const boost::system::error_code& e) {
+        if (e == net::error::operation_aborted) 
+            return;
 
-    auto deadline = std::chrono::steady_clock::now() + timeout_;
+        if (state->st != State::pending)        
+            return;
 
-    for (const auto& endpoint : endpoints) {
-        if (std::chrono::steady_clock::now() >= deadline)
-            break;
+        state->st = State::timed_out;
+        boost::system::error_code ignored;
+        socket_.close(ignored);
+        resolver.cancel();
+        });
 
-        socket_.close(ec);
-        ec.clear();
+	async_resolve(resolver, state);
 
-        bool done = false;
-        boost::system::error_code op_ec;
+    while (state->st == State::pending)
+        io_.run_one();
 
-        socket_.async_connect(endpoint, [&](const boost::system::error_code& error) {
-            op_ec = error;
-            done = true;
-            });
+    boost::system::error_code ignored;
+    timer.cancel();
 
-        while (!done) {
-            if (std::chrono::steady_clock::now() >= deadline) {
-                socket_.close();
-                io_.restart();
+    if (state->st == State::timed_out)
+        throw timeout_exception("connect timeout to " + host_ + ":" + std::to_string(port_));
 
-                throw timeout_exception("connect timeout to " + host_ + ":" + std::to_string(port_));
-            }
+    if (state->st == State::failed)
+        throw boost::system::system_error(state->ec, "connect failed to " + host_ + ":" + std::to_string(port_));
 
-            io_.run_one();
-        }
-
-        if (!op_ec)
-            return true;
-
-        ec = op_ec;
-    }
-
-    throw boost::system::system_error(ec ? ec : boost::asio::error::timed_out, "connect failed to " + host_ + ":" + std::to_string(port_));
+    return true;
 }
 
 bool brazier::TcpClient::send_raw(const std::string& data) {
@@ -81,21 +72,47 @@ std::optional<brazier::http::response<brazier::http::string_body>> brazier::TcpC
     if (!socket_.is_open())
         return std::nullopt;
 
-    socket_.non_blocking(true);
-    boost::beast::flat_buffer buffer;
-    http::response<http::string_body> res;
-    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout_sec);
-
-    while (std::chrono::steady_clock::now() < deadline) {
+    {
         boost::system::error_code ec;
-        http::read(socket_, buffer, res, ec);
-
-        if (!ec)
-            return res;
-
-        if (ec != net::error::would_block && ec != net::error::try_again)
-            return std::nullopt;
+        socket_.non_blocking(false, ec);
     }
+
+    auto state = std::make_shared<State>();
+    net::steady_timer timer(io_);
+
+    timer.expires_after(std::chrono::seconds(timeout_sec));
+    timer.async_wait([state, this](const boost::system::error_code& e) {
+        if (e == net::error::operation_aborted) 
+            return;
+
+        if (state->st != State::pending)        
+            return;
+
+        state->st = State::timed_out;
+        boost::system::error_code ignored;
+        socket_.close(ignored);
+        });
+
+    http::async_read(socket_, state->buffer, state->res,
+        [state](const boost::system::error_code& e, std::size_t) {
+            if (state->st != State::pending)        
+                return;
+
+            if (e) { 
+                state->st = State::failed; 
+                state->ec = e; 
+            }
+            else
+                state->st = State::done; 
+        });
+
+    while (state->st == State::pending)
+        io_.run_one();
+
+    timer.cancel();
+
+    if (state->st == State::done)
+        return std::move(state->res);
 
     return std::nullopt;
 }
@@ -123,3 +140,35 @@ bool brazier::TcpClient::is_connection_closed(int wait_sec) {
 
     return false;
 }
+
+void brazier::TcpClient::async_resolve(tcp::resolver& resolver, std::shared_ptr<State> state) {
+    resolver.async_resolve(host_, std::to_string(port_), 
+        [state, this](const boost::system::error_code& ec, tcp::resolver::results_type results) 
+        {
+            if (state->st != State::pending) 
+                return;
+
+            if (ec) { 
+                state->st = State::failed; 
+                state->ec = ec; 
+                return; 
+            }
+
+            net::async_connect(socket_, results,
+                [state](const boost::system::error_code& e2, const tcp::endpoint&) {
+                    if (state->st != State::pending) 
+                        return;
+
+                    if (e2) { 
+                        state->st = State::failed; 
+                        state->ec = e2; 
+                    }
+                    else { 
+                        state->st = State::connected; 
+                    }
+                });
+        });
+}
+
+brazier::TcpClient::timeout_exception::timeout_exception(const std::string& _Message) : base(_Message) {}
+brazier::TcpClient::timeout_exception::timeout_exception(const char* _Message) : base(_Message) {}

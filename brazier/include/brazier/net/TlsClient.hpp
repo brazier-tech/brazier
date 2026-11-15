@@ -33,13 +33,15 @@
 
 #include <openssl/ssl.h>
 
-namespace beast = boost::beast;
-namespace http = beast::http;
-namespace net = boost::asio;
-namespace ssl = net::ssl;
-using tcp = net::ip::tcp;
+
 
 namespace brazier {
+
+    namespace beast = boost::beast;
+    namespace http = beast::http;
+    namespace net = boost::asio;
+    namespace ssl = net::ssl;
+    using tcp = net::ip::tcp;
 
     class TlsClient {
     public:

@@ -82,17 +82,17 @@ bool brazier::TlsClient::send_raw(const std::string& data) {
 	return true;
 }
 
-std::optional<http::response<http::string_body>> brazier::TlsClient::read_response(std::chrono::milliseconds timeout) {
+std::optional<brazier::http::response<brazier::http::string_body>> brazier::TlsClient::read_response(std::chrono::milliseconds timeout) {
 	if (!stream)
 		return std::nullopt;
 
 	beast::get_lowest_layer(*stream).expires_after(timeout);
 
 	boost::beast::flat_buffer buffer;
-	http::response<http::string_body> res;
+	brazier::http::response<brazier::http::string_body> res;
 	beast::error_code ec;
 
-	http::read(*stream, buffer, res, ec);
+	brazier::http::read(*stream, buffer, res, ec);
 
 	if (ec)
 		return std::nullopt;
