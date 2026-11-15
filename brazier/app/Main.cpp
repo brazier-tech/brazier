@@ -64,7 +64,7 @@ int main() {
         std::string server_host = brazier::ConfigManager::getGlobal().get("server.host", "0.0.0.0");
         int server_port = brazier::ConfigManager::getGlobal().get("server.port", 3502);
 
-        brazier::Server http_server(server_host, static_cast<unsigned short>(server_port));
+        brazier::Server http_server(server_host, server_port);
 
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::ConfigManager::getGlobal().setAutoSave(false);
@@ -92,7 +92,6 @@ int main() {
     
     }
     catch (const std::exception& e) {
-        std::cerr << "Fatal error: " << e.what() << std::endl;
         brazier::Logger::log(std::string(e.what()), "ERROR");
         return 1;
     }
