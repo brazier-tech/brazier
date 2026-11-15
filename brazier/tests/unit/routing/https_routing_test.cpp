@@ -186,7 +186,7 @@ protected:
     }
 
     void SetUp() override {
-        if (!IsHttpsServerReady()) {
+        if (!kStartHttpsServer || !IsHttpsServerReady()) {
             GTEST_SKIP() << "HTTPS server is not running on "
                 << https_host_global << ":" << https_port_global;
         }
