@@ -37,9 +37,35 @@ fix(tls): prevent use-after-free during async session teardown
 
 ## Development
 
-If you would like to contribute by fixing an open issue or developing a new feature, you can use this suggested workflow:
+If you would like to contribute by completing an open issue or developing a new feature, you can use this suggested workflow:
 
 ...
+
+Please document each function and class you write with [Doxygen](https://www.doxygen.nl/)-style comments like this:
+```cpp
+/**
+ * @brief Short summary of your function.
+ *
+ * Longer explanation of what foo() does.
+ * It can span multiple lines and include code examples.
+ *
+ * @param[in]  count Read-only parameter.
+ * @param[out] bar   Write parameter (this will be written to by the function).
+ * @return What this function returns and in what case.
+ */
+bool foo(int count, std::string& bar);
+```
+
+At the beginning of each file, please include the following licence text:
+```cpp
+/**
+ * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Hlib Safiannikov.
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ *
+ * This source code is licensed under the LGPL license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+```
 
 ## Pull requests
 
