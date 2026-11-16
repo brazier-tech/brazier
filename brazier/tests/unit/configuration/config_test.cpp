@@ -69,9 +69,9 @@ TEST(ConfigTest, HasConfigValue) {
 
 TEST(ConfigTest, GetKeysWithPrefix) {
 	brazier::ConfigManager::initGlobal("config_test.json");
-	brazier::ConfigManager::getGlobal().set("server.host", "0.0.0.0");
-	brazier::ConfigManager::getGlobal().set<int>("server.port", 3502);
-	nlohmann::json keys = brazier::ConfigManager::getGlobal().getNestedJson("server");
+	brazier::ConfigManager::getGlobal().set("http_server.host", "0.0.0.0");
+	brazier::ConfigManager::getGlobal().set<int>("http_server.port", 3502);
+	nlohmann::json keys = brazier::ConfigManager::getGlobal().getNestedJson("http_server");
 
 	EXPECT_EQ(keys["host"], "0.0.0.0");
 	EXPECT_EQ(keys["port"], 3502);

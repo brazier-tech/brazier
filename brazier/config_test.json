@@ -1,10 +1,12 @@
 {
   "app_name": "brazierApp",
-  "server": {
+  "http_server": {
+    "enabled": true,
     "host": "0.0.0.0",
     "port": 3502
   },
   "https_server": {
+    "enabled": false,
     "host": "0.0.0.0",
     "port": 8443,
     "tls": {

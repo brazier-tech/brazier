@@ -264,46 +264,41 @@ namespace brazier {
     T ConfigManager::getNested(const std::string& path, const T& defaultValue) {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        auto it = config_.find(path);
-        if (it != config_.end()) {
-            try {
+        try {
+            const auto it = config_.find(path);
+            if (it != config_.end()) {
                 return fromString<T>(it->second);
             }
-            catch (std::exception& e) {
-                Logger::log(e.what(), "ERROR");
+
+            const std::string prefix = path + ".";
+            std::unordered_map<std::string, std::string> filtered;
+
+            for (const auto& [key, value] : config_) {
+                if (key.find(prefix) == 0) {
+                    filtered.emplace(key.substr(prefix.size()), value);
+                }
+            }
+
+            if (filtered.empty()) {
                 return defaultValue;
             }
-        }
 
-        std::string prefix = path + ".";
-        std::unordered_map<std::string, std::string> filtered;
-
-        for (const auto& [key, value] : config_) {
-            if (key.find(prefix) == 0) {
-                std::string subKey = key.substr(prefix.length());
-                filtered[subKey] = value;
-            }
-        }
-
-        if (!filtered.empty()) {
             json nestedJson = unflattenMap(filtered);
-            try {
-                if constexpr (std::is_same_v<T, json>) {
-                    return nestedJson;
-                }
-                else if constexpr (std::is_same_v<T, std::string>) {
-                    return nestedJson.dump(4);
-                }
-                else {
-                    return nestedJson.get<T>();
-                }
+
+            if constexpr (std::is_same_v<T, json>) {
+                return nestedJson;
             }
-            catch (...) {
-                return defaultValue;
+            else if constexpr (std::is_same_v<T, std::string>) {
+                return nestedJson.dump(4);
+            }
+            else {
+                return nestedJson.get<T>();
             }
         }
-
-        return defaultValue;
+        catch (const std::exception& e) {
+            Logger::log(e.what(), "ERROR");
+            return defaultValue;
+        }
     }
 
     template<typename T>

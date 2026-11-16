@@ -67,9 +67,12 @@ int main(int argc, char** argv) {
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::ConfigManager::getGlobal().setAutoSave(false);
 
+        bool kStartHttpServer = brazier::ConfigManager::getGlobal().getNested<bool>("http_server.enabled", false);
+        bool kStartHttpsServer = brazier::ConfigManager::getGlobal().getNested<bool>("https_server.enabled", false);
+
         host_global = normalizeHost(
-            brazier::ConfigManager::getGlobal().get("server.host", std::string("127.0.0.1")));
-        port_global = brazier::ConfigManager::getGlobal().get<int>("server.port", 3502);
+            brazier::ConfigManager::getGlobal().get("http_server.host", std::string("127.0.0.1")));
+        port_global = brazier::ConfigManager::getGlobal().get<int>("http_server.port", 3502);
 
         https_host_global = normalizeHost(
             brazier::ConfigManager::getGlobal().get("https_server.host", std::string("127.0.0.1")));

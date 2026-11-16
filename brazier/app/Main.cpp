@@ -64,16 +64,16 @@ int main() {
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::ConfigManager::getGlobal().setAutoSave(false);
 
-        std::string server_host =
-            brazier::ConfigManager::getGlobal().get("server.host", "0.0.0.0");
-        int server_port =
-            brazier::ConfigManager::getGlobal().get("server.port", 3502);
+        std::string http_server_host =
+            brazier::ConfigManager::getGlobal().get("http_server.host", "0.0.0.0");
+        int http_server_port =
+            brazier::ConfigManager::getGlobal().get("http_server.port", 3502);
 
-        brazier::Logger::log("HTTP server: " + server_host + ":" +
-            std::to_string(server_port), "INFO");
+        brazier::Logger::log("HTTP server: " + http_server_host + ":" +
+            std::to_string(http_server_port), "INFO");
 
-        brazier::Server server(server_host,
-            static_cast<unsigned short>(server_port));
+        brazier::Server server(http_server_host,
+            static_cast<unsigned short>(http_server_port));
 
         if (!server.initialize()) return 1;
 
