@@ -472,18 +472,18 @@ jobs:
       run: ./brazier_tests --gtest_filter=-RoutingTest.*
       shell: bash
 
-required-check-aggregator:
-  name: Required Check Aggregator 
-  needs: [linux, windows, macos] 
-  if: always()
-  runs-on: ubuntu-latest
-  steps:
-    - name: Check all required jobs passed
-      run: |
-        if [[ "${{ needs.linux.result }}" != "success" || \
-              "${{ needs.windows.result }}" != "success" || \
-              "${{ needs.macos.result }}" != "success" ]]; then
-          echo "One or more required jobs failed or were skipped."
-          exit 1
-        fi
-        echo "All required jobs passed."
+  required-check-aggregator:
+    name: Required Check Aggregator 
+    needs: [linux, windows, macos] 
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all required jobs passed
+        run: |
+          if [[ "${{ needs.linux.result }}" != "success" || \
+                "${{ needs.windows.result }}" != "success" || \
+                "${{ needs.macos.result }}" != "success" ]]; then
+            echo "One or more required jobs failed or were skipped."
+            exit 1
+          fi
+          echo "All required jobs passed."
