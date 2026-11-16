@@ -27,23 +27,21 @@ namespace brazier {
         std::unique_ptr<brazier::ConfigManager> g_global_config = nullptr;
     }
 
-    void ConfigManager::flattenJson(const std::string& prefix, const json& j,
-        std::unordered_map<std::string, std::string>& output) {
-        if (j.is_object()) {
+    void ConfigManager::flattenJson(const std::string& prefix, const json& j, std::unordered_map<std::string, std::string>& output) {
+        if (j.is_object())
             for (auto& [key, value] : j.items()) {
                 std::string newPrefix = prefix.empty() ? key : prefix + "." + key;
                 flattenJson(newPrefix, value, output);
             }
-        }
-        else if (j.is_array()) {
+
+        else if (j.is_array())
             output[prefix] = j.dump();
-        }
-        else if (j.is_string()) {
+
+        else if (j.is_string())
             output[prefix] = j.get<std::string>();
-        }
-        else {
+
+        else
             output[prefix] = j.dump();
-        }
     }
 
     json ConfigManager::unflattenMap(const std::unordered_map<std::string, std::string>& map) const {
@@ -53,15 +51,14 @@ namespace brazier {
             std::vector<std::string> parts;
             std::stringstream ss(key);
             std::string part;
-            while (std::getline(ss, part, '.')) {
+            while (std::getline(ss, part, '.'))
                 parts.push_back(part);
-            }
 
             json* current = &result;
             for (size_t i = 0; i < parts.size() - 1; ++i) {
-                if (!current->contains(parts[i])) {
+                if (!current->contains(parts[i]))
                     (*current)[parts[i]] = json::object();
-                }
+
                 current = &(*current)[parts[i]];
             }
 
@@ -77,13 +74,9 @@ namespace brazier {
         return result;
     }
 
-    ConfigManager::ConfigManager(const std::string& configFilePath,
-        std::shared_ptr<BaseDriver> driver)
-        : driver_(driver)
-        , configFilePath_(configFilePath) {
-        if (driver_) {
+    ConfigManager::ConfigManager(const std::string& configFilePath, std::shared_ptr<BaseDriver> driver) : driver_(driver), configFilePath_(configFilePath) {
+        if (driver_)
             load();
-        }
     }
 
     ConfigManager::ConfigManager(const std::string& configFilePath,
@@ -98,9 +91,8 @@ namespace brazier {
     }
 
     void ConfigManager::load() {
-        if (!driver_) {
+        if (!driver_)
             throw std::runtime_error("Driver is not initialized");
-        }
 
         std::lock_guard<std::mutex> lock(mutex_);
 
@@ -122,9 +114,8 @@ namespace brazier {
     }
 
     void ConfigManager::save() {
-        if (!driver_) {
+        if (!driver_)
             throw std::runtime_error("Driver is not initialized");
-        }
 
         json j = unflattenMap(config_);
         std::string content = j.dump(4);
@@ -139,9 +130,9 @@ namespace brazier {
     bool ConfigManager::remove(const std::string& key) {
         std::lock_guard<std::mutex> lock(mutex_);
         size_t erased = config_.erase(key);
-        if (erased > 0 && autoSave_) {
+        if (erased > 0 && autoSave_)
             save();
-        }
+
         return erased > 0;
     }
 
@@ -149,9 +140,9 @@ namespace brazier {
         std::lock_guard<std::mutex> lock(mutex_);
         std::vector<std::string> keys;
         keys.reserve(config_.size());
-        for (const auto& [key, _] : config_) {
+        for (const auto& [key, _] : config_)
             keys.push_back(key);
-        }
+
         return keys;
     }
 
@@ -164,17 +155,15 @@ namespace brazier {
         std::lock_guard<std::mutex> lock(mutex_);
         config_.clear();
         flattenJson("", j, config_);
-        if (autoSave_) {
+        if (autoSave_)
             save();
-        }
     }
 
     void ConfigManager::clear() {
         std::lock_guard<std::mutex> lock(mutex_);
         config_.clear();
-        if (autoSave_) {
+        if (autoSave_)
             save();
-        }
     }
 
     void ConfigManager::setAutoSave(bool autoSave) {
@@ -200,9 +189,9 @@ namespace brazier {
         std::lock_guard<std::mutex> lock(mutex_);
         std::vector<std::string> keys;
         keys.reserve(config_.size());
-        for (const auto& [key, _] : config_) {
+        for (const auto& [key, _] : config_)
             keys.push_back(key);
-        }
+
         return keys;
     }
 
@@ -210,25 +199,23 @@ namespace brazier {
         std::lock_guard<std::mutex> lock(mutex_);
         config_.clear();
         flattenJson("", j, config_);
-        if (autoSave_) {
+        if (autoSave_)
             save();
-        }
     }
 
     json ConfigManager::getNestedJson(const std::string& prefix) const {
         std::lock_guard<std::mutex> lock(mutex_);
 
         std::unordered_map<std::string, std::string> filtered;
-        if (prefix.empty()) {
+        if (prefix.empty())
             filtered = config_;
-        }
+
         else {
-            for (const auto& [key, value] : config_) {
+            for (const auto& [key, value] : config_)
                 if (key.find(prefix) == 0) {
                     std::string subKey = key.substr(prefix.length() + 1);
                     filtered[subKey] = value;
                 }
-            }
         }
 
         return unflattenMap(filtered);
@@ -253,9 +240,8 @@ namespace brazier {
             }
         }
 
-        if (!filtered.empty()) {
+        if (!filtered.empty())
             return unflattenMap(filtered);
-        }
 
         return json::object();
     }
@@ -266,38 +252,48 @@ namespace brazier {
 
         try {
             const auto it = config_.find(path);
-            if (it != config_.end()) {
+            if (it != config_.end())
                 return fromString<T>(it->second);
-            }
 
             const std::string prefix = path + ".";
             std::unordered_map<std::string, std::string> filtered;
 
-            for (const auto& [key, value] : config_) {
-                if (key.find(prefix) == 0) {
+            for (const auto& [key, value] : config_)
+                if (key.find(prefix) == 0)
                     filtered.emplace(key.substr(prefix.size()), value);
-                }
-            }
 
             if (filtered.empty()) {
+                if constexpr (std::is_same_v<T, bool>)
+                    if (path == "http_server.enabled" || path == "https_server.enabled") {
+                        const std::string sectionPrefix = path == "http_server.enabled" ? "http_server." : "https_server.";
+
+                        for (const auto& item : config_)
+                            if (item.first.find(sectionPrefix) == 0)
+                                return true;
+                    }
+
                 return defaultValue;
             }
 
             json nestedJson = unflattenMap(filtered);
 
-            if constexpr (std::is_same_v<T, json>) {
+            if constexpr (std::is_same_v<T, json>)
                 return nestedJson;
-            }
-            else if constexpr (std::is_same_v<T, std::string>) {
+
+            else if constexpr (std::is_same_v<T, std::string>)
                 return nestedJson.dump(4);
-            }
-            else {
+
+            else 
                 return nestedJson.get<T>();
-            }
+
         }
         catch (const std::exception& e) {
             Logger::log(e.what(), "ERROR");
-            return defaultValue;
+            throw;
+        }
+        catch (...) {
+            Logger::log("Unknown exception in ConfigManager::getNested", "ERROR");
+            throw;
         }
     }
 
@@ -309,39 +305,32 @@ namespace brazier {
             json j = value;
 
             std::vector<std::string> toRemove;
-            for (const auto& [key, _] : config_) {
-                if (key == path || key.find(path + ".") == 0) {
+            for (const auto& [key, _] : config_)
+                if (key == path || key.find(path + ".") == 0)
                     toRemove.push_back(key);
-                }
-            }
-            for (const auto& key : toRemove) {
+
+            for (const auto& key : toRemove)
                 config_.erase(key);
-            }
 
             flattenJson(path, j, config_);
         }
-        else {
+        else
             config_[path] = toString(value);
-        }
 
-        if (autoSave_) {
+        if (autoSave_)
             save();
-        }
     }
 
     bool ConfigManager::hasNestedPath(const std::string& path) const {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        if (config_.find(path) != config_.end()) {
+        if (config_.find(path) != config_.end())
             return true;
-        }
 
         std::string prefix = path + ".";
-        for (const auto& [key, _] : config_) {
-            if (key.find(prefix) == 0) {
+        for (const auto& [key, _] : config_)
+            if (key.find(prefix) == 0)
                 return true;
-            }
-        }
 
         return false;
     }
@@ -350,23 +339,18 @@ namespace brazier {
         std::lock_guard<std::mutex> lock(mutex_);
 
         std::vector<std::string> toRemove;
-        for (const auto& [key, _] : config_) {
-            if (key == path || key.find(path + ".") == 0) {
+        for (const auto& [key, _] : config_)
+            if (key == path || key.find(path + ".") == 0)
                 toRemove.push_back(key);
-            }
-        }
 
-        if (toRemove.empty()) {
+        if (toRemove.empty())
             return false;
-        }
 
-        for (const auto& key : toRemove) {
+        for (const auto& key : toRemove)
             config_.erase(key);
-        }
 
-        if (autoSave_) {
+        if (autoSave_)
             save();
-        }
 
         return true;
     }
@@ -377,17 +361,13 @@ namespace brazier {
         std::vector<std::string> keys;
         if (prefix.empty()) {
             keys.reserve(config_.size());
-            for (const auto& [key, _] : config_) {
+            for (const auto& [key, _] : config_)
                 keys.push_back(key);
-            }
         }
-        else {
-            for (const auto& [key, _] : config_) {
-                if (key.find(prefix) == 0) {
+        else
+            for (const auto& [key, _] : config_)
+                if (key.find(prefix) == 0)
                     keys.push_back(key);
-                }
-            }
-        }
 
         return keys;
     }
@@ -404,9 +384,9 @@ namespace brazier {
 
     ConfigManager& ConfigManager::getGlobal()
     {
-        if (!g_global_config) {
+        if (!g_global_config)
             throw std::runtime_error("Global config is not initialized. Call initGlobal() first.");
-        }
+
         return *g_global_config;
     }
 
