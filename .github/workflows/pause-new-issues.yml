@@ -1,0 +1,67 @@
+name: Pause New Issues
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  close-new-issue:
+    runs-on: ubuntu-latest
+    # Don't close issues opened by bots (e.g. dependabot, renovate)
+    if: github.event.issue.user.type != 'Bot'
+    steps:
+      - name: Comment, label as wontfix/backlog-closed, and close
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.issue.number;
+
+            const requiredLabels = [
+              { name: 'backlog-closed', color: 'cfd3d7', description: 'Closed automatically while new issues are paused' },
+            ];
+            for (const label of requiredLabels) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: label.name });
+              } catch (err) {
+                if (err.status === 404) {
+                  await github.rest.issues.createLabel({ owner, repo, ...label });
+                } else {
+                  throw err;
+                }
+              }
+            }
+
+            // notify
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: [
+                'Thank you for reaching out.',
+                '',
+                'We are currently **pausing new issues** to focus on our existing backlog.',
+                'This issue has been closed automatically and labeled `backlog-closed`.',
+                'Please check back later.',
+              ].join('\n'),
+            });
+
+            // apply labels
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number,
+              labels: ['backlog-closed'],
+            });
+
+            // close
+            await github.rest.issues.update({
+              owner,
+              repo,
+              issue_number,
+              state: 'closed',
+              state_reason: 'not_planned',
+            });
