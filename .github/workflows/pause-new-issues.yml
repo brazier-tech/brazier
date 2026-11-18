@@ -21,7 +21,7 @@ jobs:
             const issue_number = context.issue.number;
 
             const requiredLabels = [
-              { name: 'backlog-closed', color: 'cfd3d7', description: 'Closed automatically while new issues are paused' },
+              { name: 'backlog-closed', color: 'E14636', description: 'Closed automatically while new issues are paused' },
             ];
             for (const label of requiredLabels) {
               try {
