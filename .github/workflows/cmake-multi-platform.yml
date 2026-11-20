@@ -197,6 +197,15 @@ jobs:
           -addext "keyUsage=critical,keyCertSign,cRLSign"
         rm -f invalid_ca.key
 
+    - name: Extend CA bundle with self-signed server cert
+      shell: bash
+      run: |
+        set -euo pipefail
+        cat build/brazier/app/certs/server.crt >> build/certs/ca.crt
+        count=$(grep -c "BEGIN CERTIFICATE" build/certs/ca.crt)
+        echo "certificates in build/certs/ca.crt: $count"
+        test "$count" -ge 2
+
     - name: Verify required cert files
       shell: bash
       run: |
