@@ -5,12 +5,13 @@
     "port": 3502
   },
   "https_server": {
+    "enabled": true,
     "host": "0.0.0.0",
     "port": 8443,
     "tls": {
       "cert_file": "app/certs/server.crt",
       "key_file": "app/certs/server.key",
-      "ca_file": "",
+      "ca_file": "app/certs/ca.crt",
       "require_client_cert": false,
       "verify_client_cert": false,
       "handshake_timeout": 3,

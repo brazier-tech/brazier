@@ -26,6 +26,8 @@
 using namespace brazier;
 
 int main() {
+    setlocale(LC_ALL, ".ACP");
+
     try {
         auto benchmark_controller = std::make_shared<BenchmarkController>();
 

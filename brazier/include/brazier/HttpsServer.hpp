@@ -143,8 +143,7 @@ namespace brazier {
 
     public:
         HttpsServer(const std::string& host, unsigned short port);
-        HttpsServer(const std::string& host, unsigned short port,
-            const TlsConfig& tls);
+        HttpsServer(const std::string& host, unsigned short port, const TlsConfig& tls);
 
         void setTlsConfig(const TlsConfig& tls);
 
@@ -173,9 +172,7 @@ namespace brazier {
         void configure_tls();
         void configure_ssl_ctx(ssl::context& ctx);
         void apply_ssl_conf(ssl::context& ctx);
-        void load_cert_from_memory(ssl::context& ctx,
-            const std::string& cert_pem,
-            const std::string& key_pem);
+        void load_cert_from_memory(ssl::context& ctx, const std::string& cert_pem, const std::string& key_pem);
 
         std::shared_ptr<ssl::context> get_ssl_ctx();
 
@@ -186,8 +183,7 @@ namespace brazier {
 
         net::awaitable<void> handle_connection(tcp::socket socket);
         net::awaitable<void> accept_loop(tcp::acceptor& acceptor);
-        net::awaitable<void> accept_and_dispatch(tcp::acceptor& acceptor,
-            int worker_begin);
+        net::awaitable<void> accept_and_dispatch(tcp::acceptor& acceptor, int worker_begin);
     };
 
 }
