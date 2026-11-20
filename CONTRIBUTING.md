@@ -39,21 +39,29 @@ fix(tls): prevent use-after-free during async session teardown
 
 If you would like to contribute by completing an open issue or developing a new feature, you can use this suggested workflow:
 
-...
+1. Fork this repository and create a new branch based off the main branch.
+2. Make your own `vcpkg-configuration.json` (You can use `vcpkg-configuration.example.json``).
+3.  Run `vcpkg install` to install all necessary dependencies.
+4. Create failing tests for your fix or new feature in a separate folder in the [tests](https://github.com/brazier-tech/brazier/tree/master/brazier/tests/unit) folder.
+5. Implement your changes.
+6. Run Cmake build and wait until the project is successfully built.
+7. Run the tests by running `your_build_folder/brazier_tests` and ensure they pass.
+8. Git stage your changes and commit (review the commit guidelines).
+9. Open a PR from your fork branch for review and wait for successful checks. 
 
-Please document each function and class you write with [Doxygen](https://www.doxygen.nl/)-style comments like this:
+Please document all public functions, classes, methods, templates and fields you add or edit with [Doxygen](https://www.doxygen.nl/)-style comments. They should explain what your entity does, what parameters it accepts, and what it returns/throws.
 ```cpp
 /**
- * @brief Short summary of your function.
+ * @brief Computes the arithmetic mean of an array of numeric values.
  *
- * Longer explanation of what foo() does.
- * It can span multiple lines and include code examples.
+ * Sums all elements in the provided vector using floating-point arithmetic
+ * and divides by the total number of elements.
  *
- * @param[in]  count Read-only parameter.
- * @param[out] bar   Write parameter (this will be written to by the function).
- * @return What this function returns and in what case.
+ * @param[in] values A constant reference to a vector of double-precision values.
+ * @return The arithmetic mean as a @c double.
+ * @throws std::invalid_argument If the vector is empty.
  */
-bool foo(int count, std::string& bar);
+double meanAvg(const std::vector<double>& values);
 ```
 
 At the beginning of each file, please include the following licence text:
@@ -69,11 +77,11 @@ At the beginning of each file, please include the following licence text:
 
 ## Pull requests
 
-Please do not open pull requests yourself. Use [discussions](https://github.com/brazier-tech/brazier/discussions) to report bugs, ask questions or suggest features. If you have implemented a change, share a branch from your fork. A maintainer may then open a pull request from that branch.
+Please open a pull request from your fork branch when you have a change ready. For bugs, questions, or feature suggestions, you can use [discussions](https://github.com/brazier-tech/brazier/discussions). If you are unsure whether a change is appropriate, feel free to start a discussion first, or comment on the relevant issue.
 
-If a maintainer opens a pull request from your fork branch, please try to keep it focused in scope and avoid including unrelated commits. Pull requests will not be opened from fork branches lacking scope or including many unrelated commits.
+Please try to keep your pull request focused in scope and avoid including unrelated commits. Pull requests will lacking scope or including many unrelated commits will be closed.
 
-We will review the pull request and may suggest changes or request improvements. When we open the pull request, please make sure to check ✅ ["Allow edits from maintainers"](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) on your pull request.
+We will review the pull request and may suggest changes or request improvements. When you open a pull request, please make sure to check ✅ ["Allow edits from maintainers"](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) on it.
 
 
 Thank you for contributing to brazier!
