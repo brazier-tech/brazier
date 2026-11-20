@@ -110,6 +110,7 @@ jobs:
         {
           "app_name": "brazierApp",
           "https_server": {
+            "enabled": true,
             "host": "0.0.0.0",
             "port": 8443,
             "tls": {
@@ -215,7 +216,7 @@ jobs:
       working-directory: build
       run: ./brazier_tests
       shell: bash
-      
+
   windows:
     needs: resolve
     runs-on: windows-latest
