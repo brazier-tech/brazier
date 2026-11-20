@@ -231,6 +231,8 @@ jobs:
     runs-on: windows-latest
 
     env:
+      MSYS2_ARG_CONV_EXCL: '*'
+      MSYS_NO_PATHCONV: '1'
       VCPKG_OVERLAY_PORTS: ${{ github.workspace }}/registry/ports
       BRAZIER_LOGGER_REF:  ${{ needs.resolve.outputs.logger_ref }}
       BRAZIER_ORM_REF:     ${{ needs.resolve.outputs.orm_ref }}
