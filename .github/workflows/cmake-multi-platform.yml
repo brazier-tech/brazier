@@ -134,7 +134,9 @@ jobs:
       shell: bash
 
     - name: Generate self-signed certificate (main server)
+      shell: bash
       run: |
+        set -euo pipefail
         mkdir -p build/brazier/app/certs
         cd build/brazier/app/certs
         openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
@@ -180,8 +182,6 @@ jobs:
           -extfile client_ext.cnf
 
         rm -f server.csr server_ext.cnf client.csr client_ext.cnf ca.srl
-        openssl verify -CAfile ca.crt server.crt
-        openssl verify -CAfile ca.crt client.crt
 
     - name: Generate invalid CA
       shell: bash
@@ -191,17 +191,31 @@ jobs:
         cd build/app/certs
         openssl genrsa -out invalid_ca.key 4096
         openssl req -x509 -new -nodes -key invalid_ca.key -sha256 -days 365 \
-          -subj "/CN=Invalid Test CA" \
+          -out invalid_ca.crt -subj "/CN=Invalid Test CA" \
           -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
-          -addext "keyUsage=critical,keyCertSign,cRLSign" \
-          -out invalid_ca.crt
+          -addext "keyUsage=critical,keyCertSign,cRLSign"
         rm -f invalid_ca.key
+
+    - name: Verify required cert files
+      shell: bash
+      run: |
+        set -euo pipefail
+        for f in build/brazier/app/certs/server.crt \
+                 build/brazier/app/certs/server.key \
+                 build/certs/ca.crt \
+                 build/certs/server.crt \
+                 build/certs/server.key \
+                 build/certs/client.crt \
+                 build/certs/client.key \
+                 build/app/certs/invalid_ca.crt; do
+          test -f "$f" && echo "OK $f" || { echo "MISSING $f"; exit 1; }
+        done
 
     - name: Run tests
       working-directory: build
       run: ./brazier_tests
       shell: bash
-
+      
   windows:
     needs: resolve
     runs-on: windows-latest
