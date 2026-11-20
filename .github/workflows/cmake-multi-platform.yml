@@ -114,19 +114,15 @@ jobs:
             "host": "0.0.0.0",
             "port": 8443,
             "tls": {
-              "cert_file": "app/certs/server.crt",
-              "key_file": "app/certs/server.key",
-              "ca_file": "app/certs/ca.crt",
+              "cert_file": "brazier/app/certs/server.crt",
+              "key_file": "brazier/app/certs/server.key",
+              "ca_file": "certs/ca.crt",
               "require_client_cert": false,
               "verify_client_cert": false,
               "handshake_timeout": 3,
               "conf": []
-            },
-            "hsts": {
-              "enabled": true,
-              "header": "max-age=31536000"
             }
-        },
+          },
           "http": {
             "max_connections_testing": 20,
             "max_body_size_testing": 1048576,
@@ -139,16 +135,19 @@ jobs:
       shell: bash
 
     - name: Generate self-signed certificate (main server)
+      shell: bash
       run: |
+        set -euo pipefail
         mkdir -p build/brazier/app/certs
+        cd build/brazier/app/certs
         openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
-          -keyout build/brazier/app/certs/server.key \
-          -out build/brazier/app/certs/server.crt \
+          -keyout server.key \
+          -out server.crt \
           -subj "/CN=localhost" \
           -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
-      shell: bash
 
-    - name: Generate mTLS certificates (CA + server + client)
+    - name: Generate mTLS certificates (CA + client)
+      shell: bash
       run: |
         set -euo pipefail
         mkdir -p build/certs
@@ -156,45 +155,71 @@ jobs:
 
         openssl genrsa -out ca.key 4096
         openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 \
-          -out ca.crt \
-          -subj "/CN=Test CA" \
+          -out ca.crt -subj "/CN=Test CA" \
           -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
           -addext "keyUsage=critical,keyCertSign,cRLSign"
 
         openssl genrsa -out server.key 2048
         openssl req -new -key server.key -out server.csr -subj "/CN=localhost"
-
         printf '%s\n' \
           'basicConstraints=critical,CA:FALSE' \
           'keyUsage=critical,digitalSignature,keyEncipherment' \
           'extendedKeyUsage=serverAuth' \
-          'subjectAltName=DNS:localhost,DNS:brazier.local,IP:127.0.0.1,IP:::1' \
+          'subjectAltName=DNS:localhost,IP:127.0.0.1' \
           > server_ext.cnf
-
         openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
           -CAcreateserial -out server.crt -days 365 -sha256 \
           -extfile server_ext.cnf
 
         openssl genrsa -out client.key 2048
         openssl req -new -key client.key -out client.csr -subj "/CN=brazier-client"
-
         printf '%s\n' \
           'basicConstraints=critical,CA:FALSE' \
           'keyUsage=critical,digitalSignature' \
           'extendedKeyUsage=clientAuth' \
           > client_ext.cnf
-
         openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key \
           -CAserial ca.srl -out client.crt -days 365 -sha256 \
           -extfile client_ext.cnf
 
-        rm -f ca.srl server.csr server_ext.cnf client.csr client_ext.cnf
-        chmod 600 ca.key server.key client.key
-        chmod 644 ca.crt server.crt client.crt
+        rm -f server.csr server_ext.cnf client.csr client_ext.cnf ca.srl
 
-        openssl verify -CAfile ca.crt server.crt
-        openssl verify -CAfile ca.crt client.crt
+    - name: Generate invalid CA
       shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p build/app/certs
+        cd build/app/certs
+        openssl genrsa -out invalid_ca.key 4096
+        openssl req -x509 -new -nodes -key invalid_ca.key -sha256 -days 365 \
+          -out invalid_ca.crt -subj "/CN=Invalid Test CA" \
+          -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
+          -addext "keyUsage=critical,keyCertSign,cRLSign"
+        rm -f invalid_ca.key
+
+    - name: Extend CA bundle with self-signed server cert
+      shell: bash
+      run: |
+        set -euo pipefail
+        cat build/brazier/app/certs/server.crt >> build/certs/ca.crt
+        count=$(grep -c "BEGIN CERTIFICATE" build/certs/ca.crt)
+        echo "certificates in build/certs/ca.crt: $count"
+        test "$count" -ge 2
+
+    - name: Verify required cert files
+      shell: bash
+      run: |
+        set -euo pipefail
+        for f in build/brazier/app/certs/server.crt \
+                 build/brazier/app/certs/server.key \
+                 build/certs/ca.crt \
+                 build/certs/server.crt \
+                 build/certs/server.key \
+                 build/certs/client.crt \
+                 build/certs/client.key \
+                 build/app/certs/invalid_ca.crt; do
+          test -f "$f" && echo "OK $f" || { echo "MISSING $f"; exit 1; }
+        done
 
     - name: Run tests
       working-directory: build
@@ -206,6 +231,8 @@ jobs:
     runs-on: windows-latest
 
     env:
+      MSYS2_ARG_CONV_EXCL: '*'
+      MSYS_NO_PATHCONV: '1'
       VCPKG_OVERLAY_PORTS: ${{ github.workspace }}/registry/ports
       BRAZIER_LOGGER_REF:  ${{ needs.resolve.outputs.logger_ref }}
       BRAZIER_ORM_REF:     ${{ needs.resolve.outputs.orm_ref }}
@@ -288,23 +315,19 @@ jobs:
         {
           "app_name": "brazierApp",
           "https_server": {
-          "enabled": true,
-          "host": "0.0.0.0",
-          "port": 8443,
-          "tls": {
-            "cert_file": "app/certs/server.crt",
-            "key_file": "app/certs/server.key",
-            "ca_file": "app/certs/ca.crt",
-            "require_client_cert": false,
-            "verify_client_cert": false,
-            "handshake_timeout": 3,
-            "conf": []
-          },
-          "hsts": {
             "enabled": true,
-            "header": "max-age=31536000"
-          }
-        },
+            "host": "0.0.0.0",
+            "port": 8443,
+            "tls": {
+              "cert_file": "brazier/app/certs/server.crt",
+              "key_file": "brazier/app/certs/server.key",
+              "ca_file": "certs/ca.crt",
+              "require_client_cert": false,
+              "verify_client_cert": false,
+              "handshake_timeout": 3,
+              "conf": []
+            }
+          },
           "http": {
             "max_connections_testing": 20,
             "max_body_size_testing": 1048576,
@@ -317,58 +340,91 @@ jobs:
       shell: bash
 
     - name: Generate self-signed certificate (main server)
-      shell: pwsh
+      shell: bash
       run: |
-        New-Item -ItemType Directory -Force -Path "build/brazier/app/certs" | Out-Null
-        openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes `
-          -keyout "build/brazier/app/certs/server.key" `
-          -out "build/brazier/app/certs/server.crt" `
-          -subj "/CN=localhost" `
+        set -euo pipefail
+        mkdir -p build/brazier/app/certs
+        cd build/brazier/app/certs
+        openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
+          -keyout server.key \
+          -out server.crt \
+          -subj "/CN=localhost" \
           -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
     - name: Generate mTLS certificates (CA + client)
-      shell: pwsh
+      shell: bash
       run: |
-        New-Item -ItemType Directory -Force -Path "build/certs" | Out-Null
-        Push-Location build/certs
+        set -euo pipefail
+        mkdir -p build/certs
+        cd build/certs
 
         openssl genrsa -out ca.key 4096
-        openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 `
-          -subj "/C=RU/O=brazier/CN=brazier Root CA" `
-          -addext "basicConstraints=critical,CA:TRUE,pathlen:0" `
-          -addext "keyUsage=critical,keyCertSign,cRLSign" `
-          -out ca.crt
+        openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 \
+          -out ca.crt -subj "/CN=Test CA" \
+          -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
+          -addext "keyUsage=critical,keyCertSign,cRLSign"
 
         openssl genrsa -out server.key 2048
-        openssl req -new -key server.key -subj "/C=RU/O=brazier/CN=localhost" -out server.csr
-
-        @"
-        basicConstraints=critical,CA:FALSE
-        keyUsage=critical,digitalSignature,keyEncipherment
-        extendedKeyUsage=serverAuth
-        subjectAltName=DNS:localhost,DNS:brazier.local,IP:127.0.0.1,IP:::1
-        "@ | Set-Content -Path server.ext -Encoding ascii
-
-        openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial `
-          -out server.crt -days 3650 -sha256 -extfile server.ext
+        openssl req -new -key server.key -out server.csr -subj "/CN=localhost"
+        printf '%s\n' \
+          'basicConstraints=critical,CA:FALSE' \
+          'keyUsage=critical,digitalSignature,keyEncipherment' \
+          'extendedKeyUsage=serverAuth' \
+          'subjectAltName=DNS:localhost,IP:127.0.0.1' \
+          > server_ext.cnf
+        openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
+          -CAcreateserial -out server.crt -days 365 -sha256 \
+          -extfile server_ext.cnf
 
         openssl genrsa -out client.key 2048
-        openssl req -new -key client.key -subj "/C=RU/O=brazier/CN=brazier-client" -out client.csr
+        openssl req -new -key client.key -out client.csr -subj "/CN=brazier-client"
+        printf '%s\n' \
+          'basicConstraints=critical,CA:FALSE' \
+          'keyUsage=critical,digitalSignature' \
+          'extendedKeyUsage=clientAuth' \
+          > client_ext.cnf
+        openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key \
+          -CAserial ca.srl -out client.crt -days 365 -sha256 \
+          -extfile client_ext.cnf
 
-        @"
-        basicConstraints=critical,CA:FALSE
-        keyUsage=critical,digitalSignature
-        extendedKeyUsage=clientAuth
-        "@ | Set-Content -Path client.ext -Encoding ascii
+        rm -f server.csr server_ext.cnf client.csr client_ext.cnf ca.srl
 
-        openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial `
-          -out client.crt -days 3650 -sha256 -extfile client.ext
+    - name: Generate invalid CA
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p build/app/certs
+        cd build/app/certs
+        openssl genrsa -out invalid_ca.key 4096
+        openssl req -x509 -new -nodes -key invalid_ca.key -sha256 -days 365 \
+          -out invalid_ca.crt -subj "/CN=Invalid Test CA" \
+          -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
+          -addext "keyUsage=critical,keyCertSign,cRLSign"
+        rm -f invalid_ca.key
 
-        Remove-Item server.csr, client.csr, server.ext, client.ext, ca.srl -ErrorAction SilentlyContinue
-        openssl verify -CAfile ca.crt server.crt
-        openssl verify -CAfile ca.crt client.crt
+    - name: Extend CA bundle with self-signed server cert
+      shell: bash
+      run: |
+        set -euo pipefail
+        cat build/brazier/app/certs/server.crt >> build/certs/ca.crt
+        count=$(grep -c "BEGIN CERTIFICATE" build/certs/ca.crt)
+        echo "certificates in build/certs/ca.crt: $count"
+        test "$count" -ge 2
 
-        Pop-Location
+    - name: Verify required cert files
+      shell: bash
+      run: |
+        set -euo pipefail
+        for f in build/brazier/app/certs/server.crt \
+                 build/brazier/app/certs/server.key \
+                 build/certs/ca.crt \
+                 build/certs/server.crt \
+                 build/certs/server.key \
+                 build/certs/client.crt \
+                 build/certs/client.key \
+                 build/app/certs/invalid_ca.crt; do
+          test -f "$f" && echo "OK $f" || { echo "MISSING $f"; exit 1; }
+        done
 
     - name: Run tests
       working-directory: build
@@ -419,7 +475,12 @@ jobs:
         echo "VCPKG_KEEP_ENV_VARS = $VCPKG_KEEP_ENV_VARS"
 
     - name: Install system dependencies
-      run: brew install autoconf
+      shell: bash
+      run: |
+        set -euo pipefail
+        brew install autoconf openssl@3
+        echo "$(brew --prefix openssl@3)/bin" >> "$GITHUB_PATH"
+        "$(brew --prefix openssl@3)/bin/openssl" version
 
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
@@ -454,23 +515,19 @@ jobs:
         {
           "app_name": "brazierApp",
           "https_server": {
-          "enabled": true,
-          "host": "0.0.0.0",
-          "port": 8443,
-          "tls": {
-            "cert_file": "app/certs/server.crt",
-            "key_file": "app/certs/server.key",
-            "ca_file": "app/certs/ca.crt",
-            "require_client_cert": false,
-            "verify_client_cert": false,
-            "handshake_timeout": 3,
-            "conf": []
-          },
-          "hsts": {
             "enabled": true,
-            "header": "max-age=31536000"
-          }
-        },
+            "host": "0.0.0.0",
+            "port": 8443,
+            "tls": {
+              "cert_file": "brazier/app/certs/server.crt",
+              "key_file": "brazier/app/certs/server.key",
+              "ca_file": "certs/ca.crt",
+              "require_client_cert": false,
+              "verify_client_cert": false,
+              "handshake_timeout": 3,
+              "conf": []
+            }
+          },
           "http": {
             "max_connections_testing": 20,
             "max_body_size_testing": 1048576,
@@ -483,75 +540,91 @@ jobs:
       shell: bash
 
     - name: Generate self-signed certificate (main server)
+      shell: bash
       run: |
+        set -euo pipefail
         mkdir -p build/brazier/app/certs
         cd build/brazier/app/certs
-        echo "subjectAltName=DNS:localhost,IP:127.0.0.1" > server_ext.cnf
         openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
-          -keyout server.key -out server.crt \
+          -keyout server.key \
+          -out server.crt \
           -subj "/CN=localhost" \
-          -extensions v3_req \
-          -config <(cat /etc/ssl/openssl.cnf; echo "[v3_req]"; echo "subjectAltName=DNS:localhost,IP:127.0.0.1")
-      shell: bash
+          -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
-    - name: Generate mTLS certificates (CA + server + client)
+    - name: Generate mTLS certificates (CA + client)
+      shell: bash
       run: |
         set -euo pipefail
         mkdir -p build/certs
         cd build/certs
 
-        cat > ca.cnf <<'EOF'
-        [req]
-        distinguished_name = dn
-        prompt             = no
-        x509_extensions    = v3_ca
-        [dn]
-        C  = RU
-        O  = brazier
-        CN = brazier Test CA
-        [v3_ca]
-        basicConstraints = critical,CA:TRUE,pathlen:0
-        keyUsage         = critical,keyCertSign,cRLSign
-        EOF
-
         openssl genrsa -out ca.key 4096
         openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 \
-          -config ca.cnf -out ca.crt
+          -out ca.crt -subj "/CN=Test CA" \
+          -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
+          -addext "keyUsage=critical,keyCertSign,cRLSign"
 
         openssl genrsa -out server.key 2048
         openssl req -new -key server.key -out server.csr -subj "/CN=localhost"
-
-        cat > server_ext.cnf <<'EOF'
-        basicConstraints = critical,CA:FALSE
-        keyUsage         = critical,digitalSignature,keyEncipherment
-        extendedKeyUsage = serverAuth
-        subjectAltName   = DNS:localhost,DNS:brazier.local,IP:127.0.0.1,IP:::1
-        EOF
-
+        printf '%s\n' \
+          'basicConstraints=critical,CA:FALSE' \
+          'keyUsage=critical,digitalSignature,keyEncipherment' \
+          'extendedKeyUsage=serverAuth' \
+          'subjectAltName=DNS:localhost,IP:127.0.0.1' \
+          > server_ext.cnf
         openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
           -CAcreateserial -out server.crt -days 365 -sha256 \
           -extfile server_ext.cnf
 
         openssl genrsa -out client.key 2048
         openssl req -new -key client.key -out client.csr -subj "/CN=brazier-client"
-
-        cat > client_ext.cnf <<'EOF'
-        basicConstraints = critical,CA:FALSE
-        keyUsage         = critical,digitalSignature
-        extendedKeyUsage = clientAuth
-        EOF
-
+        printf '%s\n' \
+          'basicConstraints=critical,CA:FALSE' \
+          'keyUsage=critical,digitalSignature' \
+          'extendedKeyUsage=clientAuth' \
+          > client_ext.cnf
         openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key \
           -CAserial ca.srl -out client.crt -days 365 -sha256 \
           -extfile client_ext.cnf
 
-        rm -f ca.cnf ca.srl server.csr server_ext.cnf client.csr client_ext.cnf
-        chmod 600 ca.key server.key client.key
-        chmod 644 ca.crt server.crt client.crt
+        rm -f server.csr server_ext.cnf client.csr client_ext.cnf ca.srl
 
-        openssl verify -CAfile ca.crt server.crt
-        openssl verify -CAfile ca.crt client.crt
+    - name: Generate invalid CA
       shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p build/app/certs
+        cd build/app/certs
+        openssl genrsa -out invalid_ca.key 4096
+        openssl req -x509 -new -nodes -key invalid_ca.key -sha256 -days 365 \
+          -out invalid_ca.crt -subj "/CN=Invalid Test CA" \
+          -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
+          -addext "keyUsage=critical,keyCertSign,cRLSign"
+        rm -f invalid_ca.key
+
+    - name: Extend CA bundle with self-signed server cert
+      shell: bash
+      run: |
+        set -euo pipefail
+        cat build/brazier/app/certs/server.crt >> build/certs/ca.crt
+        count=$(grep -c "BEGIN CERTIFICATE" build/certs/ca.crt)
+        echo "certificates in build/certs/ca.crt: $count"
+        test "$count" -ge 2
+
+    - name: Verify required cert files
+      shell: bash
+      run: |
+        set -euo pipefail
+        for f in build/brazier/app/certs/server.crt \
+                 build/brazier/app/certs/server.key \
+                 build/certs/ca.crt \
+                 build/certs/server.crt \
+                 build/certs/server.key \
+                 build/certs/client.crt \
+                 build/certs/client.key \
+                 build/app/certs/invalid_ca.crt; do
+          test -f "$f" && echo "OK $f" || { echo "MISSING $f"; exit 1; }
+        done
 
     - name: Run tests
       working-directory: build
