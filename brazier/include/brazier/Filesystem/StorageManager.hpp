@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "BaseDriver.hpp"
 #include <unordered_map>
 #include <memory>
 #include <mutex>
@@ -39,12 +38,12 @@ namespace brazier {
     class StorageManager {
     private:
         /**
-         * @brief Private default constructor for the singleton.
+         * @brief Private constructor; enforces the singleton pattern.
          */
         StorageManager() = default;
 
         /**
-         * @brief Private destructor for the singleton.
+         * @brief Private destructor; the singleton lives until program termination.
          */
         ~StorageManager() = default;
 

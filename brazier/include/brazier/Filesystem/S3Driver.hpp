@@ -50,7 +50,7 @@ namespace brazier {
         /**
          * @brief Thread pool used by asynchronous operations.
          *
-         * @details Expected to be created by initAsync(). Null until then.
+         * @details Expected to be created by @c initAsync(). Null until then.
          */
         std::shared_ptr<boost::asio::thread_pool> ioPool_;
 
@@ -79,7 +79,7 @@ namespace brazier {
          * @c std::thread::hardware_concurrency().
          *
          * @note Whether asynchronous operations require a prior call to this
-         * method is implementation-defined; @ref FileDriver requires it.
+         * method is implementation-defined; similar to @ref FileDriver.
          */
         void initAsync(size_t threadCount = std::thread::hardware_concurrency()) override;
 

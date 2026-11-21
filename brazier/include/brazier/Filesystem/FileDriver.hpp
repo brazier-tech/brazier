@@ -30,7 +30,7 @@ namespace brazier {
      * not normalized and absolute paths are not treated specially.
      *
      * Synchronous operations use standard C++ filesystem and stream facilities.
-     * Asynchronous operations require prior initialization via initAsync() and
+     * Asynchronous operations require prior initialization via @c initAsync() and
      * execute the corresponding synchronous operation on an internal
      * Boost.Asio thread pool.
      *
@@ -47,7 +47,7 @@ namespace brazier {
         /**
          * @brief Thread pool used by asynchronous operations.
          *
-         * @details Created by initAsync(). Remains null until initialization.
+         * @details Created by @c initAsync(). Remains null until initialization.
          */
         std::shared_ptr<boost::asio::thread_pool> ioPool_;
 
@@ -181,7 +181,7 @@ namespace brazier {
          * @return Awaitable operation.
          *
          * @details
-         * Requires initAsync() to have been called. Posts work to the internal
+         * Requires @c initAsync() to have been called. Posts work to the internal
          * thread pool and invokes put().
          *
          * @throws std::runtime_error If the asynchronous pool is not initialized.
@@ -195,6 +195,10 @@ namespace brazier {
          * @param[in] path Path relative to the root directory.
          * @return Awaitable operation producing file content.
          *
+         * @details
+         * Requires @c initAsync() to have been called. Posts work to the internal
+         * thread pool and invokes put().
+         *
          * @throws std::runtime_error If the asynchronous pool is not initialized.
          * Exceptions from get() propagate through the awaitable.
          */
@@ -207,6 +211,10 @@ namespace brazier {
          * @return Awaitable operation producing @c true if the path exists;
          * otherwise @c false.
          *
+         * @details
+         * Requires @c initAsync() to have been called. Posts work to the internal
+         * thread pool and invokes put().
+         *
          * @throws std::runtime_error If the asynchronous pool is not initialized.
          */
         boost::asio::awaitable<bool> existsAsync(const std::string& path) const override;
@@ -217,7 +225,10 @@ namespace brazier {
          * @param[in] path Path relative to the root directory.
          * @return Awaitable operation.
          *
-         * @throws std::runtime_error If the asynchronous pool is not initialized.
+         * @details
+         * Requires initAsync() to have been called. Posts work to the internal
+         * thread pool and invokes put().@throws std::runtime_error If the asynchronous pool is not initialized.
+         * 
          * Exceptions from deleteFile() propagate through the awaitable.
          */
         boost::asio::awaitable<void> deleteFileAsync(const std::string& path) override;
@@ -228,7 +239,11 @@ namespace brazier {
          * @param[in] source Source path relative to the root directory.
          * @param[in] destination Destination path relative to the root directory.
          * @return Awaitable operation.
-         *
+         * 
+         * @details
+         * Requires initAsync() to have been called. Posts work to the internal
+         * thread pool and invokes put().@throws std::runtime_error If the asynchronous pool is not initialized.
+         * 
          * @throws std::runtime_error If the asynchronous pool is not initialized.
          * Exceptions from copy() propagate through the awaitable.
          */
@@ -240,6 +255,10 @@ namespace brazier {
          * @param[in] source Source path relative to the root directory.
          * @param[in] destination Destination path relative to the root directory.
          * @return Awaitable operation.
+         *
+         * @details
+         * Requires initAsync() to have been called. Posts work to the internal
+         * thread pool and invokes put().@throws std::runtime_error If the asynchronous pool is not initialized.
          *
          * @throws std::runtime_error If the asynchronous pool is not initialized.
          * Exceptions from move() propagate through the awaitable.

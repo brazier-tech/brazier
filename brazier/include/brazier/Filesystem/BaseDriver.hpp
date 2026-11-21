@@ -30,7 +30,7 @@ namespace brazier {
      * handling rules, overwrite behavior, and interpretation of relative paths.
      *
      * @note Asynchronous methods return @c boost::asio::awaitable and are
-     * intended to be used from Boost.Asio coroutines. Whether initAsync()
+     * intended to be used from Boost.Asio coroutines. Whether @c initAsync()
      * must be called before asynchronous operations is implementation-defined.
      *
      * @warning The exception/error-handling contract is not fixed by this
