@@ -161,10 +161,11 @@ bool TryConnectWithTlsVersion(int version) {
 
         ssl::stream<tcp::socket> stream(io, ctx);
         tcp::resolver resolver(io);
-        auto results = resolver.resolve(https_host_global,
-            std::to_string(https_port_global));
+
+        auto results = resolver.resolve(https_host_global, std::to_string(https_port_global));
         net::connect(stream.next_layer(), results);
         stream.handshake(ssl::stream_base::client);
+
         return true;
     }
     catch (...) {
