@@ -2,70 +2,121 @@
 #include "../../../include/brazier/net/TcpClient.hpp"
 #include "main.h"
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/use_future.hpp>
+
+#include <optional>
+#include <string>
+#include <utility>
+
 class TcpClientTest : public ::testing::Test {
-public:
-	const int kTestPort = port_global;
-	const std::string kTestHost = host_global;
+protected:
+    boost::asio::io_context io_;
+
+    const int kTestPort = port_global;
+    const std::string kTestHost = host_global;
+
+    brazier::TcpClient make_client(const std::string& host, uint16_t port) {
+        return brazier::TcpClient(io_.get_executor(), host, port);
+    }
+
+    brazier::TcpClient make_client() {
+        return make_client(kTestHost, static_cast<uint16_t>(kTestPort));
+    }
+
+    template<typename F>
+    auto run(F&& coro_factory) {
+        auto fut = boost::asio::co_spawn(io_, std::forward<F>(coro_factory), boost::asio::use_future);
+
+        io_.run();
+        return fut.get();
+    }
 };
 
 TEST_F(TcpClientTest, ConnectToInvalidHost) {
-	brazier::TcpClient client("invalid_host", 12345);
+    EXPECT_FALSE(run([this]() -> brazier::awaitable<bool> {
+        auto client = make_client("invalid_host", 12345);
 
-	EXPECT_THROW(client.connect(), std::runtime_error);
+        co_return co_await client.connect();
+        }));
 }
 
 TEST_F(TcpClientTest, ConnectToInvalidPort) {
-	brazier::TcpClient client(kTestHost, 0);
+    EXPECT_FALSE(run([this]() -> brazier::awaitable<bool> {
+        auto client = make_client(kTestHost, 0);
 
-	EXPECT_THROW(client.connect(), std::runtime_error);
+        co_return co_await client.connect();
+        }));
 }
 
 TEST_F(TcpClientTest, ConnectToValidHostAndPort) {
-	brazier::TcpClient client(kTestHost, kTestPort);
+    EXPECT_TRUE(run([this]() -> brazier::awaitable<bool> {
+        auto client = make_client();
 
-	EXPECT_NO_THROW(client.connect());
-}
-
-TEST_F(TcpClientTest, ConnectToValidHostAndPortWithTimeout) {
-	brazier::TcpClient client(kTestHost, kTestPort);
-
-	EXPECT_NO_THROW(client.connect());
+        co_return co_await client.connect();
+        }));
 }
 
 TEST_F(TcpClientTest, SendRawData) {
-	brazier::TcpClient client(kTestHost, kTestPort);
+    EXPECT_TRUE(run([this]() -> brazier::awaitable<bool> {
+        auto client = make_client();
 
-	EXPECT_NO_THROW(client.connect());
-	EXPECT_TRUE(client.send_raw("GET / HTTP/1.1\r\nHost: " + kTestHost + "\r\n\r\n"));
+        if (!co_await client.connect())
+            co_return false;
+
+        std::string request = "GET / HTTP/1.1\r\nHost: " + kTestHost + "\r\n\r\n";
+
+        co_return co_await client.send_raw(std::move(request));
+        }));
 }
 
 TEST_F(TcpClientTest, ReadResponse) {
-	brazier::TcpClient client(kTestHost, kTestPort);
+    auto response = run([this]() -> brazier::awaitable<
+        std::optional<brazier::http::response<brazier::http::string_body>>> {
+            auto client = make_client();
 
-	EXPECT_NO_THROW(client.connect());
-	EXPECT_TRUE(client.send_raw("GET / HTTP/1.1\r\nHost: " + kTestHost + "\r\n\r\n"));
+            if (!co_await client.connect())
+                co_return std::nullopt;
 
-	auto response = client.read_response();
+            std::string request = "GET / HTTP/1.1\r\nHost: " + kTestHost + "\r\n\r\n";
 
-	EXPECT_TRUE(response.has_value());
-	EXPECT_EQ(response->result_int(), 404);
+            if (!co_await client.send_raw(std::move(request)))
+                co_return std::nullopt;
+
+            co_return co_await client.read_response();
+        });
+
+    ASSERT_TRUE(response.has_value());
+    EXPECT_EQ(response->result_int(), 404);
 }
 
 TEST_F(TcpClientTest, IsConnectionClosed) {
-	brazier::TcpClient client(kTestHost, kTestPort);
+    EXPECT_FALSE(run([this]() -> brazier::awaitable<bool> {
+        auto client = make_client();
+        if (!co_await client.connect())
+            co_return true;
 
-	EXPECT_NO_THROW(client.connect());
-	EXPECT_FALSE(client.is_connection_closed());
+        co_return co_await client.is_connection_closed();
+        }));
 }
 
 TEST_F(TcpClientTest, ReadResponseWithTimeout) {
-	brazier::TcpClient client(kTestHost, kTestPort);
+    auto response = run([this]() -> brazier::awaitable<
+        std::optional<brazier::http::response<brazier::http::string_body>>> {
+            auto client = make_client();
 
-	EXPECT_NO_THROW(client.connect());
-	EXPECT_TRUE(client.send_raw("GET / HTTP/1.1\r\nHost: " + kTestHost + "\r\n\r\n"));
+            if (!co_await client.connect())
+                co_return std::nullopt;
 
-	auto response = client.read_response(5);
+            std::string request = "GET / HTTP/1.1\r\nHost: " + kTestHost + "\r\n\r\n";
 
-	EXPECT_TRUE(response.has_value());
-	EXPECT_EQ(response->result_int(), 404);
+            if (!co_await client.send_raw(std::move(request)))
+                co_return std::nullopt;
+
+            co_return co_await client.read_response(std::chrono::seconds(5));
+        });
+
+    ASSERT_TRUE(response.has_value());
+    EXPECT_EQ(response->result_int(), 404);
 }

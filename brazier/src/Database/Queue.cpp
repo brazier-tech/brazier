@@ -35,6 +35,7 @@ void Queue::connect(const std::string& host, int port) {
             std::string err = "Connection error: " + std::string(context_->errstr);
             redisFree(context_);
             context_ = nullptr;
+
             throw std::runtime_error(err);
         }
         else {
