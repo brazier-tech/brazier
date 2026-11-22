@@ -28,12 +28,5 @@ void RouterRegisterer::init(boost::asio::io_context& io) {
                 co_await controller->handler(req, res, params); \
             })
 
-#define CORS(path, controller) \
-            Router::add(OPTIONS, path, [controller](const Request& req, Response& res, const Params& params) -> boost::asio::awaitable<void> { \
-                controller->setCors(req, res); \
-                co_return; \
-            })
-
 #undef R
-#undef CORS
 }

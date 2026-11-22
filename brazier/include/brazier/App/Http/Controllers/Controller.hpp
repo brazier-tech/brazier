@@ -42,8 +42,6 @@ namespace brazier {
         virtual boost::asio::awaitable<void> delete_(const Request& req, Response& res, const Params& params);
         virtual boost::asio::awaitable<void> update(const Request& req, Response& res, const Params& params);
 
-        virtual void setCors(const Request& req, Response& res);
-        virtual void setCorsHeaders(const Request& req, Response& res);
 
         virtual ~Controller() = default;
     };

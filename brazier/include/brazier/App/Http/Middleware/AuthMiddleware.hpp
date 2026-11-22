@@ -9,7 +9,7 @@
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * brazier is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -19,25 +19,30 @@
  */
 
 #pragma once
-#include "Middleware.hpp"
-#include "../Services/AuthService.hpp"
+
+#include "FusedOnion.hpp"
+
+#include <functional>
+#include <utility>
 
 namespace brazier {
 
-	class CorsMiddleware : public Middleware {
+    // Adapt an application-provided authentication check into Fused Onion middleware.
+    inline Middleware authMiddleware(
+        std::function<bool(const FusedOnion::Request&)> authenticate
+    ) {
+        return [authenticate = std::move(authenticate)]
+            (Context& context, Next next) -> Awaitable {
 
-		std::vector<std::string> allowed_domains;
-		std::string allow_origin;
+            if (!authenticate || !authenticate(context.request)) {
+                context.response.result(
+                    boost::beast::http::status::unauthorized
+                );
+                co_return;
+            }
 
-	public:
-		bool handle(Request& req, Response& res) {
-			try {
+            co_await next();
+        };
+    }
 
-			}
-			catch (const std::exception& e) {
-				Logger::log((std::string)e.what(), "ERROR")
-			}
-
-		}
-	};
 }

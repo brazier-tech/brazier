@@ -41,12 +41,6 @@ namespace brazier {
                 co_await controller->handler(req, res, params); \
             })
 
-    #define CORS(path, controller) \
-            Router::add(OPTIONS, path, [controller](const Request& req, Response& res, const Params& params) -> boost::asio::awaitable<void> { \
-                controller->setCors(req, res); \
-                co_return; \
-            })
-
     #define WS_R(path, controller, handler) \
         brazier::WebSocketRouter::instance().add_route(path, \
             [controller](std::shared_ptr<brazier::WebSocketSession> session, const brazier::Params& params) { \

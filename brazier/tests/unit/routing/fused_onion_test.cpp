@@ -14,14 +14,22 @@
 #include <boost/beast/http.hpp>
 
 #include <stdexcept>
+#include <type_traits>
 #include <string>
 #include <vector>
 
 #include "../../../include/brazier/App/Http/Middleware/FusedOnion.hpp"
+#include "../../../include/brazier/App/Http/Middleware/CorsMiddleware.hpp"
+#include "../../../include/brazier/App/Http/Middleware/AuthMiddleware.hpp"
 
 namespace net = boost::asio;
 namespace http = boost::beast::http;
 using brazier::FusedOnion;
+
+static_assert(std::is_same_v<brazier::Middleware, FusedOnion::Middleware>);
+static_assert(std::is_same_v<brazier::Context, FusedOnion::Context>);
+static_assert(std::is_same_v<brazier::Next, FusedOnion::Next>);
+static_assert(std::is_same_v<brazier::Awaitable, FusedOnion::Awaitable>);
 
 namespace {
 
@@ -285,4 +293,102 @@ TEST(FusedOnionTest, PreAndPostAdaptersAreOnionLayers) {
 
     const std::vector<std::string> expected{"pre", "controller", "post"};
     EXPECT_EQ(events, expected);
+}
+
+TEST(FusedOnionTest, AuthMiddlewareFactoryCanShortCircuit) {
+    bool controller_called = false;
+
+    FusedOnion pipeline(
+        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
+            controller_called = true;
+            co_return;
+        }
+    );
+
+    brazier::Middleware authentication = brazier::authMiddleware(
+        [](const FusedOnion::Request&) {
+            return false;
+        }
+    );
+    pipeline.middleware.use(authentication);
+
+    auto request = MakeRequest();
+    auto response = MakeResponse();
+    FusedOnion::Params params;
+
+    RunAwaitable(pipeline.run(request, response, params));
+
+    EXPECT_FALSE(controller_called);
+    EXPECT_EQ(response.result(), http::status::unauthorized);
+}
+
+TEST(FusedOnionTest, CorsMiddlewareFactoryAddsHeadersAndContinues) {
+    bool controller_called = false;
+
+    FusedOnion pipeline(
+        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
+            controller_called = true;
+            co_return;
+        }
+    );
+
+    pipeline.middleware.use(brazier::corsMiddleware({"https://example.com"}));
+
+    auto request = MakeRequest();
+    request.set(http::field::origin, "https://example.com");
+    auto response = MakeResponse();
+    FusedOnion::Params params;
+
+    RunAwaitable(pipeline.run(request, response, params));
+
+    EXPECT_TRUE(controller_called);
+    EXPECT_EQ(response[http::field::access_control_allow_origin], "https://example.com");
+    EXPECT_EQ(response[http::field::access_control_allow_credentials], "true");
+}
+
+TEST(FusedOnionTest, CorsMiddlewareFactoryRejectsUnconfiguredOrigins) {
+    bool controller_called = false;
+
+    FusedOnion pipeline(
+        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
+            controller_called = true;
+            co_return;
+        }
+    );
+
+    pipeline.middleware.use(brazier::corsMiddleware({"https://allowed.example"}));
+
+    auto request = MakeRequest();
+    request.set(http::field::origin, "https://blocked.example");
+    auto response = MakeResponse();
+    FusedOnion::Params params;
+
+    RunAwaitable(pipeline.run(request, response, params));
+
+    EXPECT_FALSE(controller_called);
+    EXPECT_EQ(response.result(), http::status::forbidden);
+}
+
+TEST(FusedOnionTest, CorsMiddlewareFactoryHandlesOptionsPreflight) {
+    bool controller_called = false;
+
+    FusedOnion pipeline(
+        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
+            controller_called = true;
+            co_return;
+        }
+    );
+
+    pipeline.middleware.use(brazier::corsMiddleware({"https://example.com"}));
+
+    auto request = FusedOnion::Request{http::verb::options, "/", 11};
+    request.set(http::field::origin, "https://example.com");
+    auto response = MakeResponse();
+    FusedOnion::Params params;
+
+    RunAwaitable(pipeline.run(request, response, params));
+
+    EXPECT_FALSE(controller_called);
+    EXPECT_EQ(response.result(), http::status::no_content);
+    EXPECT_EQ(response[http::field::access_control_allow_origin], "https://example.com");
 }
