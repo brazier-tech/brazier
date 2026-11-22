@@ -1,0 +1,97 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-0fa14cc6f81f68abd214.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "brazier-core",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "brazier_app::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-brazier_app-Debug-096589b8c1d79a7ad324.json",
+					"name" : "brazier_app",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "brazier_core::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-brazier_core-Debug-86dfa50b26e519649262.json",
+					"name" : "brazier_core",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "brazier_core_objects::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-brazier_core_objects-Debug-e368119047edb504910b.json",
+					"name" : "brazier_core_objects",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "brazier_tests::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-brazier_tests-Debug-a729c30df1049cced6f0.json",
+					"name" : "brazier_tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "check::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-check-Debug-69a8622830a5d9599a58.json",
+					"name" : "check",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier",
+		"source" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 8
+	}
+}

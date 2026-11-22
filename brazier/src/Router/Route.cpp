@@ -1,37 +1,23 @@
-/*
- * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Gleb Safyannikov
+/**
+* Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Hlib Safiannikov.
  * SPDX-License-Identifier: LGPL-3.0-or-later
  *
- * This file is part of brazier.
- *
- * brazier is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * brazier is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with brazier; if not, see <https://www.gnu.org/licenses/>.
+ * This source code is licensed under the LGPL license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 #include "../../include/brazier/Router/Route.hpp"
 
 using namespace brazier;
 
-Route::Route(const std::string& path,
-    std::function<boost::asio::awaitable<void>(const Request&, Response&, const Params&)> handler)
-    : originalPath_(path), handler_(std::move(handler)) {
+Route::Route(const std::string& path, FusedOnion::Controller handler) : pipeline_(std::move(handler)), originalPath_(path), request(pipeline_.request), middleware(pipeline_.middleware), response(pipeline_.response), error(pipeline_.error) {
     pathRegex_ = convertPathToRegex(path);
     paramNames_ = extractParamNames(path);
 }
 
 bool Route::match(const std::string& target, Params& outParams) const {
     std::string pathOnly = target;
-    size_t queryPos = target.find('?');
+    const auto queryPos = target.find('?');
 
     if (queryPos != std::string::npos) {
         pathOnly = target.substr(0, queryPos);
@@ -39,18 +25,17 @@ bool Route::match(const std::string& target, Params& outParams) const {
 
     std::smatch match;
     if (std::regex_match(pathOnly, match, pathRegex_)) {
-        for (size_t i = 0; i < paramNames_.size(); ++i) {
+        for (std::size_t i = 0; i < paramNames_.size(); ++i) {
             outParams[paramNames_[i]] = match[i + 1];
         }
         return true;
     }
+
     return false;
 }
 
 boost::asio::awaitable<void> Route::process(const Request& req, Response& res, const Params& params) const {
-    if (handler_) {
-        co_await handler_(req, res, params);
-    }
+    return pipeline_.run(req, res, params);
 }
 
 const std::string& Route::path() const {
@@ -63,20 +48,18 @@ std::regex Route::convertPathToRegex(const std::string& path) {
     std::string token;
 
     while (std::getline(stream, token, '/')) {
-        if (token.empty()) continue;
+        if (token.empty())
+            continue;
 
-        if (token[0] == ':') {
+        if (token[0] == ':')
             regexStr += "/([^/]+)";
-        }
-        else {
+        else
             regexStr += "/" + token;
-        }
     }
 
     if (regexStr == "^") {
         regexStr += "/?$";
-    }
-    else {
+    } else {
         regexStr += "$";
     }
 
@@ -89,9 +72,9 @@ std::vector<std::string> Route::extractParamNames(const std::string& path) {
     std::string token;
 
     while (std::getline(stream, token, '/')) {
-        if (!token.empty() && token[0] == ':') {
+        if (!token.empty() && token[0] == ':')
             names.push_back(token.substr(1));
-        }
     }
+
     return names;
 }

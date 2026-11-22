@@ -1,49 +1,64 @@
-/*
- * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Gleb Safyannikov
+/**
+ * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Hlib Safiannikov.
  * SPDX-License-Identifier: LGPL-3.0-or-later
  *
- * This file is part of brazier.
- *
- * brazier is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * brazier is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with brazier; if not, see <https://www.gnu.org/licenses/>.
+ * This source code is licensed under the LGPL license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 #include "../../include/brazier/Router/Router.hpp"
 
+#include <mutex>
+
 using namespace brazier;
 
-std::unordered_map<http::verb, std::vector<Route>>& Router::get_routes() {
-    static std::unordered_map<http::verb, std::vector<Route>> routes;
+std::unordered_map<http::verb, Router::RouteList>& Router::get_routes() {
+    static std::unordered_map<http::verb, RouteList> routes;
     return routes;
 }
 
-void Router::add(http::verb method, const std::string& path,
-    std::function<boost::asio::awaitable<void>(const Request&, Response&, const Params&)> handler) {
-    get_routes()[method].emplace_back(path, std::move(handler));
+std::shared_mutex& Router::get_routes_mutex() {
+    static std::shared_mutex mutex;
+    return mutex;
 }
 
-boost::asio::awaitable<void> Router::handle_request(const Request& req, Response& res) {
-    auto method = req.method();
-    std::string target = std::string(req.target());
-    auto& routes = get_routes(); 
+std::shared_ptr<Route> Router::add(
+    http::verb method,
+    const std::string& path,
+    FusedOnion::Controller handler
+) {
+    auto route = std::make_shared<Route>(path, std::move(handler));
 
-    if (routes.find(method) != routes.end()) {
-        for (const auto& route : routes[method]) {
-            Params params;
-            if (route.match(target, params)) {
-                co_await route.process(req, res, params);
-                co_return;
-            }
+    {
+        std::unique_lock lock(get_routes_mutex());
+        get_routes()[method].push_back(route);
+    }
+
+    return route;
+}
+
+boost::asio::awaitable<void> Router::handle_request(
+    const Request& req,
+    Response& res
+) {
+    const auto method = req.method();
+    const std::string target(req.target());
+
+    // Copy the route handles while holding the lock, then release the lock before any coroutine suspension. A std::mutex/shared_mutex lock must not be held across co_await because the coroutine may resume elsewhere.
+    RouteList candidates;
+    {
+        std::shared_lock lock(get_routes_mutex());
+        const auto it = get_routes().find(method);
+        if (it != get_routes().end()) {
+            candidates = it->second;
+        }
+    }
+
+    for (const auto& route : candidates) {
+        Params params;
+        if (route->match(target, params)) {
+            co_await route->process(req, res, params);
+            co_return;
         }
     }
 

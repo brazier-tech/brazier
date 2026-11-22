@@ -1,0 +1,11 @@
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/brazier_core_objects.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/brazier_core.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/brazier_app.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/brazier_tests.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/check.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/edit_cache.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/rebuild_cache.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/list_install_components.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/install.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/install/local.dir
+/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/install/strip.dir

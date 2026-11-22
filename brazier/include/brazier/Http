@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Hlib Safiannikov.
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ *
+ * This source code is licensed under the LGPL license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 #pragma once
 
 #include "App/Http/Controllers/Controller.hpp"
@@ -5,6 +13,7 @@
 #include "App/Http/Helpers/Cookie.hpp"
 #include "App/Http/Helpers/HttpClient.hpp"
 #include "App/Http/Helpers/Validator.hpp"
-#include "App/Http/Middlewares/Middleware.hpp"
-#include "App/Http/Middlewares/MiddlewarePipeline.hpp"
-#include "App/Http/Middlewares/CorsMiddleware.hpp"
+#include "App/Http/Middleware/Middleware.hpp"
+#include "App/Http/Middleware/MiddlewarePipeline.hpp"
+#include "App/Http/Middleware/CorsMiddleware.hpp"
+#include "App/Http/Middleware/FusedOnion.hpp"

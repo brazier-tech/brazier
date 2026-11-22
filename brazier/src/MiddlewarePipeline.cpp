@@ -18,7 +18,7 @@
  * along with brazier; if not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../include/brazier/App/Http/Middlewares/MiddlewarePipeline.hpp"
+#include "../include/brazier/App/Http/Middleware/MiddlewarePipeline.hpp"
 
 using namespace brazier;
 

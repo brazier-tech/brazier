@@ -22,6 +22,7 @@
 #include "../include/brazier/Http"
 #include "../include/brazier/Engine.hpp"
 #include "BenchmarkController.hpp"
+#include "Http/Routes.hpp"
 
 using namespace brazier;
 
@@ -30,6 +31,7 @@ int main() {
         auto benchmark_controller = std::make_shared<BenchmarkController>();
 
         R(GET, "/test", benchmark_controller, test);
+        App::Http::register_routes();
 
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::ConfigManager::getGlobal().setAutoSave(false);

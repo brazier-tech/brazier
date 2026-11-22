@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14)
 project(brazier-core VERSION 0.2.2 LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -152,7 +152,9 @@ export(TARGETS brazier_core
 option(BUILD_APP "Build brazier demo app" ON)
 
 if(BUILD_APP)
-    add_executable(brazier_app app/Main.cpp)
+    file(GLOB_RECURSE BRAZIER_APP_SOURCES CONFIGURE_DEPENDS "app/*.cpp")
+    list(FILTER BRAZIER_APP_SOURCES EXCLUDE REGEX "(^|/)Main\\.cpp$")
+    add_executable(brazier_app app/Main.cpp ${BRAZIER_APP_SOURCES})
 
     target_include_directories(brazier_app PRIVATE
         ${CMAKE_SOURCE_DIR}/include

@@ -1,0 +1,914 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/cmake_pch.hxx.pch"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Code.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/ConfigManager.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Controller.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Cookie.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Cryptography/AES.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Cryptography/RSA.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Database/Cache.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Database/Queue.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/ENV.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Engine.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Filesystem/FileDriver.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Filesystem/Filesystem.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Filesystem/StorageManager.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Hash.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/HttpClient.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/HttpsServer.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/HttpsServerConfig.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/HttpsServerConnection.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/HttpsServerTLS.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Middleware.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/MiddlewarePipeline.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Platform/MacOS/SocketOptions.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Platform/MacOS/SystemInfo.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Router/Route.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Router/Router.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Router/RouterRegisterer.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Router/WSRoute.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Router/WSRouter.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Server.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/SmtpClient.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Storage.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/TLS/TicketKeyStore.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/Validator.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/WebSocketManager.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/WebSocketServer.cpp.o"
+		},
+		{
+			"path" : "CMakeFiles/brazier_core_objects.dir/src/WebSocketSession.cpp.o"
+		}
+	],
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"_add_library",
+			"add_library",
+			"target_compile_definitions",
+			"target_link_libraries",
+			"target_include_directories",
+			"target_precompile_headers",
+			"target_compile_features"
+		],
+		"files" : 
+		[
+			"/Users/gleb/vcpkg/scripts/buildsystems/vcpkg.cmake",
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 95,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 666,
+				"parent" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 113,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 97,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 1,
+				"line" : 99,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 1,
+				"line" : 104,
+				"parent" : 0
+			},
+			{
+				"command" : 5,
+				"file" : 1,
+				"line" : 118,
+				"parent" : 0
+			},
+			{
+				"command" : 6,
+				"file" : 1,
+				"line" : 112,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -std=c++20 -arch arm64 -fPIC -fcolor-diagnostics"
+				},
+				{
+					"fragment" : "-Winvalid-pch -Xclang -emit-pch -Xclang -include -Xclang /Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/brazier_core_objects.dir/cmake_pch.hxx -x c++-header"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 3,
+					"define" : "BOOST_ASIO_HAS_CO_AWAIT"
+				},
+				{
+					"backtrace" : 3,
+					"define" : "BOOST_ASIO_HAS_STD_COROUTINE"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_ATOMIC_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_ATOMIC_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CHRONO_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CHRONO_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTAINER_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTAINER_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTEXT_EXPORT="
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTEXT_NO_LIB="
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTEXT_STATIC_LINK="
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_DATE_TIME_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_DATE_TIME_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_FILESYSTEM_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_FILESYSTEM_STATIC_LINK=1"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_THREAD_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_THREAD_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_THREAD_USE_LIB"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 5,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/include"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/Database"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/Router"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/App"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/Storage"
+				},
+				{
+					"backtrace" : 4,
+					"isSystem" : true,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/vcpkg_installed/arm64-osx/include"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					8,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4
+				],
+				"standard" : "20"
+			},
+			"precompileHeaders" : 
+			[
+				{
+					"backtrace" : 7,
+					"header" : "<boost/asio.hpp>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<boost/beast.hpp>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<fmt/format.h>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<nlohmann/json.hpp>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<openssl/ssl.h>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<coroutine>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<string>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<vector>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<memory>"
+				}
+			],
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -std=c++20 -arch arm64 -fPIC -fcolor-diagnostics"
+				},
+				{
+					"fragment" : "-Winvalid-pch -Xclang -include-pch -Xclang /Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/brazier_core_objects.dir/cmake_pch.hxx.pch -Xclang -include -Xclang /Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/CMakeFiles/brazier_core_objects.dir/cmake_pch.hxx"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 3,
+					"define" : "BOOST_ASIO_HAS_CO_AWAIT"
+				},
+				{
+					"backtrace" : 3,
+					"define" : "BOOST_ASIO_HAS_STD_COROUTINE"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_ATOMIC_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_ATOMIC_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CHRONO_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CHRONO_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTAINER_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTAINER_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTEXT_EXPORT="
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTEXT_NO_LIB="
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_CONTEXT_STATIC_LINK="
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_DATE_TIME_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_DATE_TIME_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_FILESYSTEM_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_FILESYSTEM_STATIC_LINK=1"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_THREAD_NO_LIB"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_THREAD_STATIC_LINK"
+				},
+				{
+					"backtrace" : 4,
+					"define" : "BOOST_THREAD_USE_LIB"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 5,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/include"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/Database"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/Router"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/App"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/Storage"
+				},
+				{
+					"backtrace" : 4,
+					"isSystem" : true,
+					"path" : "/Users/gleb/Documents/Megaprojects/web/brazier-all/Brazier/brazier/vcpkg_installed/arm64-osx/include"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					8,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4,
+					4
+				],
+				"standard" : "20"
+			},
+			"precompileHeaders" : 
+			[
+				{
+					"backtrace" : 7,
+					"header" : "<boost/asio.hpp>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<boost/beast.hpp>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<fmt/format.h>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<nlohmann/json.hpp>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<openssl/ssl.h>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<coroutine>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<string>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<vector>"
+				},
+				{
+					"backtrace" : 7,
+					"header" : "<memory>"
+				}
+			],
+			"sourceIndexes" : 
+			[
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				24,
+				25,
+				28,
+				29,
+				30,
+				31,
+				32,
+				33,
+				34,
+				35,
+				36,
+				37,
+				38,
+				39,
+				40
+			]
+		}
+	],
+	"id" : "brazier_core_objects::@6890427a1f51a3e7e1df",
+	"name" : "brazier_core_objects",
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25,
+				26,
+				27,
+				28,
+				29,
+				30,
+				31,
+				32,
+				33,
+				34,
+				35,
+				36,
+				37,
+				38,
+				39,
+				40
+			]
+		},
+		{
+			"name" : "Precompile Header File",
+			"sourceIndexes" : 
+			[
+				41
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 0,
+			"compileGroupIndex" : 0,
+			"path" : "CMakeFiles/brazier_core_objects.dir/cmake_pch.hxx.cxx",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Code.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/ConfigManager.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Controller.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Cookie.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Cryptography/AES.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Cryptography/RSA.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Database/Cache.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Database/Queue.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/ENV.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Engine.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Filesystem/FileDriver.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Filesystem/Filesystem.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Filesystem/StorageManager.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Hash.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/HttpClient.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/HttpsServer.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/HttpsServerConfig.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/HttpsServerConnection.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/HttpsServerTLS.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Middleware.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/MiddlewarePipeline.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"path" : "src/Platform/Linux/SocketOptions.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"path" : "src/Platform/Linux/SystemInfo.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Platform/MacOS/SocketOptions.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Platform/MacOS/SystemInfo.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"path" : "src/Platform/Windows/SocketOptions.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"path" : "src/Platform/Windows/SystemInfo.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Router/Route.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Router/Router.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Router/RouterRegisterer.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Router/WSRoute.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Router/WSRouter.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Server.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/SmtpClient.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Storage.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/TLS/TicketKeyStore.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/Validator.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/WebSocketManager.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/WebSocketServer.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 1,
+			"path" : "src/WebSocketSession.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"path" : "CMakeFiles/brazier_core_objects.dir/cmake_pch.hxx",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "OBJECT_LIBRARY"
+}
