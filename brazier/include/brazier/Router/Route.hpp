@@ -27,7 +27,6 @@ using Response = http::response<http::string_body>;
 using Params = std::unordered_map<std::string, std::string>;
 
 namespace brazier {
-
     class Route {
         FusedOnion pipeline_;
         std::regex pathRegex_;
@@ -35,24 +34,22 @@ namespace brazier {
         std::string originalPath_;
 
     public:
-        // Route-scoped interceptor managers. Each manager shares the same registry and publishes a new, consistent fused snapshot on change.
         FusedOnion::RequestManager request;
         FusedOnion::MiddlewareManager middleware;
         FusedOnion::ResponseManager response;
         FusedOnion::ErrorManager error;
 
-        Route(const std::string& path, FusedOnion::Controller handler);
+        Route(const std::string &path, FusedOnion::Controller handler);
 
-        bool match(const std::string& target, Params& outParams) const;
-        boost::asio::awaitable<void> process(
-            const Request& req,
-            Response& res,
-            const Params& params
-        ) const;
-        const std::string& path() const;
+        bool match(const std::string &target, Params &outParams) const;
+
+        boost::asio::awaitable<void> process(const Request &req, Response &res, const Params &params) const;
+
+        const std::string &path() const;
 
     private:
-        static std::regex convertPathToRegex(const std::string& path);
-        static std::vector<std::string> extractParamNames(const std::string& path);
+        static std::regex convertPathToRegex(const std::string &path);
+
+        static std::vector<std::string> extractParamNames(const std::string &path);
     };
 }

@@ -14,23 +14,14 @@
 #include <utility>
 
 namespace brazier {
-
-    // Adapt an application-provided authentication check into Fused Onion middleware.
-    inline Middleware authMiddleware(
-        std::function<bool(const FusedOnion::Request&)> authenticate
-    ) {
-        return [authenticate = std::move(authenticate)]
-            (Context& context, Next next) -> Awaitable {
-
+    inline Middleware authMiddleware(std::function<bool(const FusedOnion::Request &)> authenticate) {
+        return [authenticate = std::move(authenticate)](Context &context, Next next) -> Awaitable {
             if (!authenticate || !authenticate(context.request)) {
-                context.response.result(
-                    boost::beast::http::status::unauthorized
-                );
+                context.response.result(boost::beast::http::status::unauthorized);
                 co_return;
             }
 
             co_await next();
         };
     }
-
 }

@@ -6,8 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-// This source file retains the retired file path. Middleware is now the coroutine-based Fused Onion callable.
-
 #pragma once
 
 #include "FusedOnion.hpp"

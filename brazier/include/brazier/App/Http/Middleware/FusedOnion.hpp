@@ -25,15 +25,15 @@
 #include <utility>
 #include <variant>
 #include <vector>
-#include <version>
 #include <shared_mutex>
 
 namespace brazier {
-
     /**
      * @brief FusedOnion is a route-local, coroutine-aware request pipeline.
      *
-     * The registry is mutable, but each request executes one immutable snapshot. Registering/ejecting handlers rebuilds the snapshot. Normal request execution does not rebuild the chain or take the registry lock.
+     * The registry is mutable, but each request executes one immutable snapshot.
+     * Registering/ejecting handlers rebuilds the snapshot.
+     * Normal request execution does not rebuild the chain or take the registry lock.
      */
     class FusedOnion {
     public:
@@ -47,16 +47,16 @@ namespace brazier {
          * @brief Per-request storage and state shared by every handler in the pipeline.
          *
          * Provides:
-         *  - read-only access to the request, response, and route params;
-         *  - a type-erased key/value store for arbitrary per-request data;
-         *  - the exception currently being processed by error interceptors;
-         *  - a "handled" flag that error interceptors use to stop propagation.
+         *  - read-only access to the request, response, and route params
+         *  - a type-erased key/value store for arbitrary per-request data
+         *  - the exception currently being processed by error interceptors
+         *  - a `handled` flag that error interceptors use to stop propagation
          */
         class Context {
         public:
-            const Request& request;   ///< Incoming HTTP request.
-            Response& response;       ///< Outgoing HTTP response.
-            const Params& params;     ///< Route path parameters.
+            const Request &request;
+            Response &response;
+            const Params &params;
 
             /**
              * @brief Constructs a request context.
@@ -65,8 +65,8 @@ namespace brazier {
              * @param response Reference to the outgoing HTTP response.
              * @param params Reference to the route path parameters.
              */
-            Context(const Request& request, Response& response, const Params& params)
-                : request(request), response(response), params(params) {}
+            Context(const Request &request, Response &response, const Params &params) : request(request), response(response), params(params) {
+            }
 
             /**
              * @brief Stores or replaces a value of type @p T in the context.
@@ -77,7 +77,7 @@ namespace brazier {
              * @tparam T Type of the value to store.
              * @param value Value to store.
              */
-            template <typename T>
+            template<typename T>
             void set(T value) {
                 data_.insert_or_assign(std::type_index(typeid(T)), std::any(std::move(value)));
             }
@@ -88,8 +88,8 @@ namespace brazier {
              * @tparam T Type of the stored value.
              * @return Pointer to the stored value, or @c nullptr if no value of type @p T is present.
              */
-            template <typename T>
-            T* get() noexcept {
+            template<typename T>
+            T *get() noexcept {
                 const auto it = data_.find(std::type_index(typeid(T)));
                 return it == data_.end() ? nullptr : std::any_cast<T>(&it->second);
             }
@@ -100,8 +100,8 @@ namespace brazier {
              * @tparam T Type of the stored value.
              * @return Const pointer to the stored value, or @c nullptr if no value of type @p T is present.
              */
-            template <typename T>
-            const T* get() const noexcept {
+            template<typename T>
+            const T *get() const noexcept {
                 const auto it = data_.find(std::type_index(typeid(T)));
                 return it == data_.end() ? nullptr : std::any_cast<T>(&it->second);
             }
@@ -113,7 +113,7 @@ namespace brazier {
              *
              * @tparam T Type of the value to erase.
              */
-            template <typename T>
+            template<typename T>
             void erase() {
                 data_.erase(std::type_index(typeid(T)));
             }
@@ -126,16 +126,15 @@ namespace brazier {
              *
              * @return Reference to the stored exception pointer; empty when no error has occurred.
              */
-            const std::exception_ptr& exception() const noexcept {
+            [[nodiscard]] const std::exception_ptr &exception() const noexcept {
                 return exception_;
             }
 
-            // Replace the exception currently being processed by error hooks.
             void set_exception(std::exception_ptr exception) noexcept {
                 exception_ = std::move(exception);
             }
 
-            // Call this from an error interceptor to stop propagation.
+            // stops error propagation.
             void handle_error() noexcept {
                 error_handled_ = true;
             }
@@ -165,13 +164,12 @@ namespace brazier {
         /**
          * @brief Handle passed to a middleware, used to invoke the downstream chain.
          *
-         * A middleware may invoke the continuation at most once (or not at all, which
-         * short-circuits the rest of the pipeline). Calling it more than once, or calling
-         * it when it was constructed without a continuation, throws @c std::logic_error.
+         * A middleware may invoke the continuation at most once (or not at all, which short-circuits the rest of the pipeline).
+         * Calling it more than once, or calling it when it was constructed without a continuation, throws @c std::logic_error.
          */
         class Next {
         public:
-            /// Callable returning the awaitable downstream chain.
+            // return awaitable downstream chain
             using Continuation = std::function<Awaitable()>;
 
             /**
@@ -180,17 +178,15 @@ namespace brazier {
              * @param continuation Callable that, when invoked, runs the downstream chain.
              */
             explicit Next(Continuation continuation)
-                : state_(std::make_shared<State>(std::move(continuation))) {}
+                : state_(std::make_shared<State>(std::move(continuation))) {
+            }
 
             // A continuation may be invoked at most once. Omitting next() is valid and short-circuits the remaining pipeline.
             Awaitable operator()() const {
-                if (!state_)
-                    throw std::logic_error("next() has no continuation");
+                if (!state_) throw std::logic_error("next() has no continuation");
 
                 bool expected = false;
-                if (!state_->invoked.compare_exchange_strong(
-                        expected, true, std::memory_order_acq_rel))
-                    throw std::logic_error("middleware called next() more than once");
+                if (!state_->invoked.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) throw std::logic_error("middleware called next() more than once");
 
                 return state_->continuation();
             }
@@ -198,7 +194,8 @@ namespace brazier {
         private:
             struct State {
                 explicit State(Continuation continuation)
-                    : continuation(std::move(continuation)) {}
+                    : continuation(std::move(continuation)) {
+                }
 
                 Continuation continuation;
                 std::atomic_bool invoked{false};
@@ -207,26 +204,26 @@ namespace brazier {
             std::shared_ptr<State> state_;
         };
 
-        using Controller = std::function<Awaitable(const Request&, Response&, const Params&)>;
-        using RequestInterceptor = std::function<Awaitable(Context&)>;
-        using Middleware = std::function<Awaitable(Context&, Next)>;
-        using ResponseInterceptor = std::function<Awaitable(Context&)>;
-        using ErrorInterceptor = std::function<Awaitable(Context&)>;
+        using Controller = std::function<Awaitable(const Request &, Response &, const Params &)>;
+        using RequestInterceptor = std::function<Awaitable(Context &)>;
+        using Middleware = std::function<Awaitable(Context &, Next)>;
+        using ResponseInterceptor = std::function<Awaitable(Context &)>;
+        using ErrorInterceptor = std::function<Awaitable(Context &)>;
 
         /**
          * @brief Pipeline stages in registration order.
          *
-         * Handlers of each stage are invoked in the order they were registered.
+         * @note Handlers of each stage are invoked in the order they were registered.
          */
         enum class Stage {
-            request,    ///< Request interceptors; run before the middleware chain.
-            middleware, ///< Middleware; run as an onion around the controller.
-            response,   ///< Response interceptors; run after the middleware chain.
-            error       ///< Error interceptors; run when something throws.
+            request,
+            middleware,
+            response,
+            error
         };
 
     private:
-        using Endpoint = std::function<Awaitable(Context&)>;
+        using Endpoint = std::function<Awaitable(Context &)>;
         using Handler = std::variant<RequestInterceptor, Middleware, ResponseInterceptor, ErrorInterceptor>;
 
         struct Entry {
@@ -271,8 +268,8 @@ namespace brazier {
             /**
              * @brief Removes a handler identified by stage and ID.
              *
-             * On success the snapshot is republished, so subsequent requests observe the
-             * removal; in-flight requests keep using the snapshot they started with.
+             * On success the snapshot is republished, so subsequent requests observe the removal.
+             * In-flight requests keep using the snapshot they started with.
              *
              * @param stage Stage the handler belongs to.
              * @param id Identifier returned by add().
@@ -280,12 +277,9 @@ namespace brazier {
              */
             bool eject(Stage stage, Id id) {
                 std::lock_guard lock(mutex);
-                const auto it = std::ranges::find_if(
-                    entries,
-                    [stage, id](const Entry& entry) {
-                        return entry.stage == stage && entry.id == id;
-                    }
-                );
+                const auto it = std::ranges::find_if(entries, [stage, id](const Entry &entry) {
+                    return entry.stage == stage && entry.id == id;
+                });
 
                 if (it == entries.end())
                     return false;
@@ -305,13 +299,9 @@ namespace brazier {
             void clear(Stage stage) {
                 std::lock_guard lock(mutex);
                 const auto old_size = entries.size();
-                entries.erase(
-                    std::ranges::remove_if(entries,
-                                           [stage](const Entry& entry) {
-                                               return entry.stage == stage;
-                                           }).begin(),
-                    entries.end()
-                );
+                std::erase_if(entries, [stage](const Entry &entry) {
+                    return entry.stage == stage;
+                });
 
                 if (entries.size() != old_size)
                     publish();
@@ -326,10 +316,9 @@ namespace brazier {
             std::size_t size(Stage stage) const {
                 std::lock_guard lock(mutex);
                 std::size_t result = 0;
-                for (const auto& entry : entries) {
-                    if (entry.stage == stage) {
+                for (const auto &entry: entries) {
+                    if (entry.stage == stage)
                         ++result;
-                    }
                 }
                 return result;
             }
@@ -340,7 +329,7 @@ namespace brazier {
              * @param controller Controller to invoke; may be empty.
              * @param context Request context forwarded to the controller.
              */
-            static Awaitable invoke_controller(Controller controller, const Context& context) {
+            static Awaitable invoke_controller(Controller controller, const Context &context) {
                 if (controller)
                     co_await controller(context.request, context.response, context.params);
             }
@@ -352,7 +341,7 @@ namespace brazier {
              * @param downstream Next endpoint in the chain.
              * @param context Request context forwarded to the middleware.
              */
-            static Awaitable invoke_middleware(Middleware middleware, Endpoint downstream, Context& context) {
+            static Awaitable invoke_middleware(Middleware middleware, Endpoint downstream, Context &context) {
                 Next next{
                     [downstream = std::move(downstream), &context]() mutable {
                         return downstream(context);
@@ -364,21 +353,18 @@ namespace brazier {
             /**
              * @brief Runs the error interceptors against @p context.
              *
-             * Each interceptor is invoked in registration order. If an interceptor throws, the
-             * new exception replaces the one stored on the context and the handled flag is reset
-             * so later interceptors still see the error. Iteration stops as soon as any
-             * interceptor calls Context::handle_error().
+             * Each interceptor is invoked in registration order.
+             * If an interceptor throws, the new exception replaces the one stored on the context and the handled flag is reset so later interceptors still see the error.
+             * Iteration stops as soon as any interceptor calls `Context::handle_error()`.
              *
              * @param handlers Error interceptors to run.
              * @param context Request context whose exception is being processed.
              */
-            static Awaitable run_error_interceptors(const std::vector<ErrorInterceptor>& handlers, Context& context) {
-                for (const auto& handler : handlers) {
+            static Awaitable run_error_interceptors(const std::vector<ErrorInterceptor> &handlers, Context &context) {
+                for (const auto &handler: handlers) {
                     try {
-                        if (handler)
-                            co_await handler(context);
-                    }
-                    catch (...) {
+                        if (handler) co_await handler(context);
+                    } catch (...) {
                         context.set_exception(std::current_exception());
                         context.reset_error_handled();
                     }
@@ -391,23 +377,21 @@ namespace brazier {
             /**
              * @brief Builds the onion-style endpoint chain from the given middleware.
              *
-             * Middleware registered earlier ends up on the outside of the resulting chain, so it
-             * sees the request first and the response last. The innermost endpoint invokes the
-             * controller.
+             * Middleware registered earlier ends up on the outside of the resulting chain, so it sees the request first and the response last.
+             * The innermost endpoint invokes the controller.
              *
              * @param middleware Middleware in registration order.
              * @return Endpoint that runs the middleware chain and then the controller.
              */
-            Endpoint compose(const std::vector<Middleware>& middleware) const {
-                Endpoint endpoint = [controller = this->controller](const Context& context) {
+            Endpoint compose(const std::vector<Middleware> &middleware) const {
+                Endpoint endpoint = [controller = this->controller](const Context &context) {
                     return invoke_controller(controller, context);
                 };
 
                 for (auto it = middleware.rbegin(); it != middleware.rend(); ++it) {
                     auto downstream = std::move(endpoint);
                     auto current = *it;
-                    endpoint = [current = std::move(current),
-                                downstream = std::move(downstream)](Context& context) mutable {
+                    endpoint = [current = std::move(current), downstream = std::move(downstream)](Context &context) mutable {
                         return invoke_middleware(current, downstream, context);
                     };
                 }
@@ -418,27 +402,26 @@ namespace brazier {
             /**
              * @brief Rebuilds the immutable pipeline snapshot from the current entries and publishes it.
              *
-             * Copies the registered handlers into a fresh Snapshot, recomposes the middleware
-             * chain, and installs the result as the active snapshot. Must be called with @c mutex held.
+             * Copies the registered handlers into a fresh Snapshot, recomposes the middleware chain, and installs the result as the active snapshot. Must be called with @c mutex held.
              */
             void publish() {
                 auto next = std::make_shared<Snapshot>();
                 std::vector<Middleware> middleware;
 
-                for (const auto& entry : entries) {
+                for (const auto &entry: entries) {
                     switch (entry.stage) {
-                    case Stage::request:
-                        next->request.push_back(std::get<0>(entry.handler));
-                        break;
-                    case Stage::middleware:
-                        middleware.push_back(std::get<1>(entry.handler));
-                        break;
-                    case Stage::response:
-                        next->response.push_back(std::get<2>(entry.handler));
-                        break;
-                    case Stage::error:
-                        next->error.push_back(std::get<3>(entry.handler));
-                        break;
+                        case Stage::request:
+                            next->request.push_back(std::get<0>(entry.handler));
+                            break;
+                        case Stage::middleware:
+                            middleware.push_back(std::get<1>(entry.handler));
+                            break;
+                        case Stage::response:
+                            next->response.push_back(std::get<2>(entry.handler));
+                            break;
+                        case Stage::error:
+                            next->error.push_back(std::get<3>(entry.handler));
+                            break;
                     }
                 }
 
@@ -450,17 +433,17 @@ namespace brazier {
             mutable std::mutex mutex;
             std::vector<Entry> entries;
             Id next_id = 1;
-            #if defined(__cpp_lib_atomic_shared_ptr) && \
+#if defined(__cpp_lib_atomic_shared_ptr) && \
                 __cpp_lib_atomic_shared_ptr >= 201711L
 
-                        std::atomic<std::shared_ptr<const Snapshot>> active{};
+            std::atomic<std::shared_ptr<const Snapshot> > active{};
 
-            #else
+#else
 
-                        mutable std::shared_mutex snapshot_mutex;
-                        std::shared_ptr<const Snapshot> active;
+            mutable std::shared_mutex snapshot_mutex;
+            std::shared_ptr<const Snapshot> active;
 
-            #endif
+#endif
 
             /**
              * @brief Publishes a new immutable pipeline snapshot.
@@ -471,20 +454,17 @@ namespace brazier {
              * Otherwise, protects the shared pointer with a mutex.
              */
             void publish_snapshot(std::shared_ptr<const Snapshot> snapshot) {
-                #if defined(__cpp_lib_atomic_shared_ptr) && \
-                __cpp_lib_atomic_shared_ptr >= 201711L
+#if defined(__cpp_lib_atomic_shared_ptr) && \
+                    __cpp_lib_atomic_shared_ptr >= 201711L
 
-                    active.store(
-                        std::move(snapshot),
-                        std::memory_order_release
-                    );
+                active.store(std::move(snapshot), std::memory_order_release);
 
-                #else
+#else
 
-                    std::unique_lock lock(snapshot_mutex);
-                    active = std::move(snapshot);
+                std::unique_lock lock(snapshot_mutex);
+                active = std::move(snapshot);
 
-                #endif
+#endif
             }
 
             /**
@@ -496,17 +476,17 @@ namespace brazier {
              * Otherwise, acquires a shared lock while copying the pointer.
              */
             [[nodiscard]] std::shared_ptr<const Snapshot> load_snapshot() const {
-                #if defined(__cpp_lib_atomic_shared_ptr) && \
-                __cpp_lib_atomic_shared_ptr >= 201711L
+#if defined(__cpp_lib_atomic_shared_ptr) && \
+                    __cpp_lib_atomic_shared_ptr >= 201711L
 
-                    return active.load(std::memory_order_acquire);
+                return active.load(std::memory_order_acquire);
 
-                #else
+#else
 
-                    std::shared_lock lock(snapshot_mutex);
-                    return active;
+                std::shared_lock lock(snapshot_mutex);
+                return active;
 
-                #endif
+#endif
             }
         };
 
@@ -515,8 +495,9 @@ namespace brazier {
         std::shared_ptr<State> state_;
 
     public:
+        template<typename HandlerType, Stage ManagerStage>
         /**
-         * @brief Handle allowing registration, removal, and inspection of handlers for one Stage.
+         * @brief Handle to allow registration, removal, and inspection of handlers for one Stage.
          *
          * The three public managers (@ref request, @ref middleware, @ref response, @ref error)
          * are instances of this template specialised with different stage tags.
@@ -524,7 +505,6 @@ namespace brazier {
          * @tparam HandlerType Handler type accepted by use().
          * @tparam ManagerStage Stage this manager administers.
          */
-        template <typename HandlerType, Stage ManagerStage>
         class Manager {
         public:
             /**
@@ -535,10 +515,7 @@ namespace brazier {
              */
             Id use(HandlerType handler) const {
                 constexpr auto index = static_cast<std::size_t>(ManagerStage);
-                return state_->add(
-                    ManagerStage,
-                    Handler(std::in_place_index<index>, std::move(handler))
-                );
+                return state_->add(ManagerStage, Handler(std::in_place_index<index>, std::move(handler)));
             }
 
             /**
@@ -563,7 +540,7 @@ namespace brazier {
              *
              * @return Number of registered handlers.
              */
-            std::size_t size() const {
+            [[nodiscard]] std::size_t size() const {
                 return state_->size(ManagerStage);
             }
 
@@ -576,30 +553,30 @@ namespace brazier {
              *
              * @param state Pipeline state the manager operates on.
              */
-            explicit Manager(std::shared_ptr<State> state) : state_(std::move(state)) {}
+            explicit Manager(std::shared_ptr<State> state) : state_(std::move(state)) {
+            }
 
             std::shared_ptr<State> state_;
             friend class FusedOnion;
         };
 
-        using RequestManager    = Manager<RequestInterceptor,    Stage::request>;
-        using MiddlewareManager = Manager<Middleware,            Stage::middleware>;
-        using ResponseManager   = Manager<ResponseInterceptor,   Stage::response>;
-        using ErrorManager      = Manager<ErrorInterceptor,      Stage::error>;
+        using RequestManager = Manager<RequestInterceptor, Stage::request>;
+        using MiddlewareManager = Manager<Middleware, Stage::middleware>;
+        using ResponseManager = Manager<ResponseInterceptor, Stage::response>;
+        using ErrorManager = Manager<ErrorInterceptor, Stage::error>;
 
-        RequestManager    request;     ///< Manager for request interceptors.
-        MiddlewareManager middleware;  ///< Manager for middleware (the onion itself).
-        ResponseManager   response;    ///< Manager for response interceptors.
-        ErrorManager      error;       ///< Manager for error interceptors.
+        RequestManager request;
+        MiddlewareManager middleware;
+        ResponseManager response;
+        ErrorManager error;
 
         /**
          * @brief Constructs a pipeline around a controller with empty handler lists.
          *
          * @param controller Endpoint invoked at the end of the middleware chain.
          */
-        explicit FusedOnion(Controller controller)
-            : state_(std::make_shared<State>(std::move(controller))),
-              request(state_), middleware(state_), response(state_), error(state_) {}
+        explicit FusedOnion(Controller controller) : state_(std::make_shared<State>(std::move(controller))), request(state_), middleware(state_), response(state_), error(state_) {
+        }
 
         /**
          * @brief Executes the pipeline for a single request.
@@ -614,7 +591,7 @@ namespace brazier {
          * @throws Rethrows the first unhandled exception produced by the chain or by an error
          *         interceptor (see execute() for details).
          */
-        Awaitable run(const Request& request, Response& response, const Params& params) const {
+        Awaitable run(const Request &request, Response &response, const Params &params) const {
             // Keep the snapshot alive for the entire coroutine, even when use() or eject() publishes a newer version concurrently.
             return execute(state_->load_snapshot(), request, response, params);
         }
@@ -629,7 +606,7 @@ namespace brazier {
          * @return Middleware suitable for registration with @ref middleware.
          */
         static Middleware pre(RequestInterceptor before) {
-            return [before = std::move(before)](Context& context, Next next) mutable {
+            return [before = std::move(before)](Context &context, Next next) mutable {
                 return invoke_pre(before, context, std::move(next));
             };
         }
@@ -644,7 +621,7 @@ namespace brazier {
          * @return Middleware suitable for registration with @ref middleware.
          */
         static Middleware post(ResponseInterceptor after) {
-            return [after = std::move(after)](Context& context, Next next) mutable {
+            return [after = std::move(after)](Context &context, Next next) mutable {
                 return invoke_post(after, context, std::move(next));
             };
         }
@@ -659,10 +636,9 @@ namespace brazier {
          * @return Middleware suitable for registration with @ref middleware.
          */
         static Middleware wrap(RequestInterceptor before, ResponseInterceptor after) {
-            return [before = std::move(before), after = std::move(after)]
-                (Context& context, Next next) mutable {
-                    return invoke_wrap(before, after, context, std::move(next));
-                };
+            return [before = std::move(before), after = std::move(after)](Context &context, Next next) mutable {
+                return invoke_wrap(before, after, context, std::move(next));
+            };
         }
 
     private:
@@ -673,7 +649,7 @@ namespace brazier {
          * @param context Request context.
          * @param next Downstream continuation.
          */
-        static Awaitable invoke_pre(RequestInterceptor before, Context& context, Next next) {
+        static Awaitable invoke_pre(RequestInterceptor before, Context &context, Next next) {
             if (before)
                 co_await before(context);
             co_await next();
@@ -686,7 +662,7 @@ namespace brazier {
          * @param context Request context.
          * @param next Downstream continuation.
          */
-        static Awaitable invoke_post(ResponseInterceptor after, Context& context, Next next) {
+        static Awaitable invoke_post(ResponseInterceptor after, Context &context, Next next) {
             co_await next();
             if (after)
                 co_await after(context);
@@ -700,7 +676,7 @@ namespace brazier {
          * @param context Request context.
          * @param next Downstream continuation.
          */
-        static Awaitable invoke_wrap(RequestInterceptor before, ResponseInterceptor after, Context& context, Next next) {
+        static Awaitable invoke_wrap(RequestInterceptor before, ResponseInterceptor after, Context &context, Next next) {
             if (before)
                 co_await before(context);
             co_await next();
@@ -711,16 +687,14 @@ namespace brazier {
         /**
          * @brief Runs a request through an immutable snapshot of the pipeline.
          *
-         * Order of execution:
+         * Request interceptors will be run through in order first, followed by the composed middleware chain to the controller, after which response interceptors will be run through.
          *  1. Request interceptors, in order.
          *  2. The composed middleware chain, terminating in the controller.
          *  3. Response interceptors, in order.
          *
-         * Any exception thrown by stages 1–2 is captured, stored on the context, and passed to
-         * the error interceptors. If an error interceptor does not mark the error as handled,
-         * the (possibly replaced) exception is rethrown. Response interceptors still run even
-         * after a recovered exception, so that cross-cutting response work (headers,
-         * compression, instrumentation) is always applied.
+         * Any exception thrown by the first two stages is captured and stored on the context to be passed to the error interceptors.
+         * If an error interceptor does not mark the error as handled, the (possibly replaced) exception is rethrown.
+         * Response interceptors still run even after a recovered exception, so that cross-cutting response work (headers, compression, instrumentation) is always applied.
          *
          * The same logic runs for exceptions thrown by the response interceptors themselves.
          *
@@ -728,23 +702,20 @@ namespace brazier {
          * @param request  Incoming HTTP request.
          * @param response Outgoing HTTP response.
          * @param params   Route path parameters.
-         * @throws Rethrows the first unhandled exception produced by the chain or by an
-         *         error interceptor.
+         * @throws Rethrows the first unhandled exception produced by the chain or by an error interceptor.
          */
-        static Awaitable execute(std::shared_ptr<const Snapshot> snapshot, const Request& request, Response& response, const Params& params) {
+        static Awaitable execute(std::shared_ptr<const Snapshot> snapshot, const Request &request, Response &response, const Params &params) {
             Context context(request, response, params);
             std::exception_ptr failure;
 
             try {
-                for (const auto& handler : snapshot->request) {
+                for (const auto &handler: snapshot->request) {
                     if (handler)
                         co_await handler(context);
                 }
 
-                if (snapshot->onion)
-                    co_await snapshot->onion(context);
-            }
-            catch (...) {
+                if (snapshot->onion) co_await snapshot->onion(context);
+            } catch (...) {
                 failure = std::current_exception();
             }
 
@@ -753,20 +724,17 @@ namespace brazier {
                 context.reset_error_handled();
                 co_await State::run_error_interceptors(snapshot->error, context);
 
-                if (!context.error_handled()) {
+                if (!context.error_handled())
                     std::rethrow_exception(context.exception());
-                }
             }
 
             // Response hooks also run after a recovered exception to allow for common headers, compression, and response instrumentation.
             failure = nullptr;
             try {
-                for (const auto& handler : snapshot->response) {
-                    if (handler)
-                        co_await handler(context);
+                for (const auto &handler: snapshot->response) {
+                    if (handler) co_await handler(context);
                 }
-            }
-            catch (...) {
+            } catch (...) {
                 failure = std::current_exception();
             }
 
@@ -786,5 +754,4 @@ namespace brazier {
     using Next = FusedOnion::Next;
     using Awaitable = FusedOnion::Awaitable;
     using Middleware = FusedOnion::Middleware;
-
 }

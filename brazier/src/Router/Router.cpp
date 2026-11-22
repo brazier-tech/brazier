@@ -8,8 +8,6 @@
 
 #include "../../include/brazier/Router/Router.hpp"
 
-#include <mutex>
-
 using namespace brazier;
 
 std::unordered_map<http::verb, Router::RouteList>& Router::get_routes() {
@@ -22,11 +20,7 @@ std::shared_mutex& Router::get_routes_mutex() {
     return mutex;
 }
 
-std::shared_ptr<Route> Router::add(
-    http::verb method,
-    const std::string& path,
-    FusedOnion::Controller handler
-) {
+std::shared_ptr<Route> Router::add(http::verb method, const std::string& path, FusedOnion::Controller handler) {
     auto route = std::make_shared<Route>(path, std::move(handler));
 
     {
@@ -37,22 +31,15 @@ std::shared_ptr<Route> Router::add(
     return route;
 }
 
-boost::asio::awaitable<void> Router::handle_request(
-    const Request& req,
-    Response& res
-) {
+boost::asio::awaitable<void> Router::handle_request(const Request& req, Response& res) {
     const auto method = req.method();
     const std::string target(req.target());
 
-    // Copy the route handles while holding the lock, then release the lock before any coroutine suspension. A std::mutex/shared_mutex lock must not be held across co_await because the coroutine may resume elsewhere.
     RouteList candidates;
-    {
-        std::shared_lock lock(get_routes_mutex());
-        const auto it = get_routes().find(method);
-        if (it != get_routes().end()) {
-            candidates = it->second;
-        }
-    }
+    std::shared_lock lock(get_routes_mutex());
+    const auto it = get_routes().find(method);
+    if (it != get_routes().end())
+        candidates = it->second;
 
     for (const auto& route : candidates) {
         Params params;

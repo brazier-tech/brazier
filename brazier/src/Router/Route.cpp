@@ -10,18 +10,17 @@
 
 using namespace brazier;
 
-Route::Route(const std::string& path, FusedOnion::Controller handler) : pipeline_(std::move(handler)), originalPath_(path), request(pipeline_.request), middleware(pipeline_.middleware), response(pipeline_.response), error(pipeline_.error) {
+Route::Route(const std::string &path, FusedOnion::Controller handler) : pipeline_(std::move(handler)), originalPath_(path), request(pipeline_.request), middleware(pipeline_.middleware), response(pipeline_.response), error(pipeline_.error) {
     pathRegex_ = convertPathToRegex(path);
     paramNames_ = extractParamNames(path);
 }
 
-bool Route::match(const std::string& target, Params& outParams) const {
+bool Route::match(const std::string &target, Params &outParams) const {
     std::string pathOnly = target;
     const auto queryPos = target.find('?');
 
-    if (queryPos != std::string::npos) {
+    if (queryPos != std::string::npos)
         pathOnly = target.substr(0, queryPos);
-    }
 
     std::smatch match;
     if (std::regex_match(pathOnly, match, pathRegex_)) {
@@ -34,15 +33,15 @@ bool Route::match(const std::string& target, Params& outParams) const {
     return false;
 }
 
-boost::asio::awaitable<void> Route::process(const Request& req, Response& res, const Params& params) const {
+boost::asio::awaitable<void> Route::process(const Request &req, Response &res, const Params &params) const {
     return pipeline_.run(req, res, params);
 }
 
-const std::string& Route::path() const {
+const std::string &Route::path() const {
     return originalPath_;
 }
 
-std::regex Route::convertPathToRegex(const std::string& path) {
+std::regex Route::convertPathToRegex(const std::string &path) {
     std::string regexStr = "^";
     std::istringstream stream(path);
     std::string token;
@@ -57,24 +56,22 @@ std::regex Route::convertPathToRegex(const std::string& path) {
             regexStr += "/" + token;
     }
 
-    if (regexStr == "^") {
+    if (regexStr == "^")
         regexStr += "/?$";
-    } else {
+    else
         regexStr += "$";
-    }
 
     return std::regex(regexStr);
 }
 
-std::vector<std::string> Route::extractParamNames(const std::string& path) {
+std::vector<std::string> Route::extractParamNames(const std::string &path) {
     std::vector<std::string> names;
     std::istringstream stream(path);
     std::string token;
 
-    while (std::getline(stream, token, '/')) {
+    while (std::getline(stream, token, '/'))
         if (!token.empty() && token[0] == ':')
             names.push_back(token.substr(1));
-    }
 
     return names;
 }

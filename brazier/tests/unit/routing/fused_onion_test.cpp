@@ -32,7 +32,6 @@ static_assert(std::is_same_v<brazier::Next, FusedOnion::Next>);
 static_assert(std::is_same_v<brazier::Awaitable, FusedOnion::Awaitable>);
 
 namespace {
-
     void RunAwaitable(FusedOnion::Awaitable operation) {
         net::io_context io;
         auto result = net::co_spawn(io, std::move(operation), net::use_future);
@@ -51,36 +50,27 @@ namespace {
     FusedOnion::Response MakeResponse() {
         return FusedOnion::Response{http::status::ok, 11};
     }
-
 }
 
 TEST(FusedOnionTest, MiddlewareRunsInOnionOrder) {
     std::vector<std::string> events;
 
-    FusedOnion pipeline(
-        [&events](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            events.emplace_back("controller");
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&events](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        events.emplace_back("controller");
+        co_return;
+    });
 
-    pipeline.middleware.use(
-        [&events](FusedOnion::Context&, FusedOnion::Next next)
-            -> FusedOnion::Awaitable {
-            events.emplace_back("outer:before");
-            co_await next();
-            events.emplace_back("outer:after");
-        }
-    );
+    pipeline.middleware.use([&events](FusedOnion::Context &, FusedOnion::Next next) -> FusedOnion::Awaitable {
+        events.emplace_back("outer:before");
+        co_await next();
+        events.emplace_back("outer:after");
+    });
 
-    pipeline.middleware.use(
-        [&events](FusedOnion::Context&, FusedOnion::Next next)
-            -> FusedOnion::Awaitable {
-            events.emplace_back("inner:before");
-            co_await next();
-            events.emplace_back("inner:after");
-        }
-    );
+    pipeline.middleware.use([&events](FusedOnion::Context &, FusedOnion::Next next) -> FusedOnion::Awaitable {
+        events.emplace_back("inner:before");
+        co_await next();
+        events.emplace_back("inner:after");
+    });
 
     auto request = MakeRequest();
     auto response = MakeResponse();
@@ -88,39 +78,31 @@ TEST(FusedOnionTest, MiddlewareRunsInOnionOrder) {
 
     RunAwaitable(pipeline.run(request, response, params));
 
-    const std::vector<std::string> expected{
-        "outer:before",
-        "inner:before",
-        "controller",
-        "inner:after",
-        "outer:after"
-    };
+    const std::vector<std::string> expected{"outer:before", "inner:before", "controller", "inner:after", "outer:after"};
     EXPECT_EQ(events, expected);
 }
 
 TEST(FusedOnionTest, RequestAndResponseInterceptorsRunInRegistrationOrder) {
     std::vector<std::string> events;
 
-    FusedOnion pipeline(
-        [&events](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            events.emplace_back("controller");
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&events](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        events.emplace_back("controller");
+        co_return;
+    });
 
-    pipeline.request.use([&events](FusedOnion::Context&) -> FusedOnion::Awaitable {
+    pipeline.request.use([&events](FusedOnion::Context &) -> FusedOnion::Awaitable {
         events.emplace_back("request:1");
         co_return;
     });
-    pipeline.request.use([&events](FusedOnion::Context&) -> FusedOnion::Awaitable {
+    pipeline.request.use([&events](FusedOnion::Context &) -> FusedOnion::Awaitable {
         events.emplace_back("request:2");
         co_return;
     });
-    pipeline.response.use([&events](FusedOnion::Context&) -> FusedOnion::Awaitable {
+    pipeline.response.use([&events](FusedOnion::Context &) -> FusedOnion::Awaitable {
         events.emplace_back("response:1");
         co_return;
     });
-    pipeline.response.use([&events](FusedOnion::Context&) -> FusedOnion::Awaitable {
+    pipeline.response.use([&events](FusedOnion::Context &) -> FusedOnion::Awaitable {
         events.emplace_back("response:2");
         co_return;
     });
@@ -131,29 +113,23 @@ TEST(FusedOnionTest, RequestAndResponseInterceptorsRunInRegistrationOrder) {
 
     RunAwaitable(pipeline.run(request, response, params));
 
-    const std::vector<std::string> expected{
-        "request:1", "request:2", "controller", "response:1", "response:2"
-    };
+    const std::vector<std::string> expected{"request:1", "request:2", "controller", "response:1", "response:2"};
     EXPECT_EQ(events, expected);
 }
 
 TEST(FusedOnionTest, MiddlewareCanShortCircuit) {
     bool controller_called = false;
 
-    FusedOnion pipeline(
-        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            controller_called = true;
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&controller_called](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        controller_called = true;
+        co_return;
+    });
 
-    pipeline.middleware.use(
-        [](FusedOnion::Context& context, FusedOnion::Next) -> FusedOnion::Awaitable {
-            context.response.result(http::status::unauthorized);
-            context.response.body() = "unauthorized";
-            co_return; // Deliberately do not call next().
-        }
-    );
+    pipeline.middleware.use([](FusedOnion::Context &context, FusedOnion::Next) -> FusedOnion::Awaitable {
+        context.response.result(http::status::unauthorized);
+        context.response.body() = "unauthorized";
+        co_return; // Deliberately do not call next()
+    });
 
     auto request = MakeRequest();
     auto response = MakeResponse();
@@ -169,28 +145,20 @@ TEST(FusedOnionTest, MiddlewareCanShortCircuit) {
 TEST(FusedOnionTest, ContextDataIsSharedAcrossOnionLayers) {
     std::string observed;
 
-    FusedOnion pipeline(
-        [&observed](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&observed](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        co_return;
+    });
 
-    pipeline.middleware.use(
-        [](FusedOnion::Context& context, FusedOnion::Next next)
-            -> FusedOnion::Awaitable {
-            context.set(UserMarker{"authenticated"});
-            co_await next();
-        }
-    );
+    pipeline.middleware.use([](FusedOnion::Context &context, FusedOnion::Next next) -> FusedOnion::Awaitable {
+        context.set(UserMarker{"authenticated"});
+        co_await next();
+    });
 
-    pipeline.middleware.use(
-        [&observed](FusedOnion::Context& context, FusedOnion::Next next)
-            -> FusedOnion::Awaitable {
-            const auto* marker = context.get<UserMarker>();
-            observed = marker ? marker->value : "missing";
-            co_await next();
-        }
-    );
+    pipeline.middleware.use([&observed](FusedOnion::Context &context, FusedOnion::Next next) -> FusedOnion::Awaitable {
+        const auto *marker = context.get<UserMarker>();
+        observed = marker ? marker->value : "missing";
+        co_await next();
+    });
 
     auto request = MakeRequest();
     auto response = MakeResponse();
@@ -203,22 +171,19 @@ TEST(FusedOnionTest, ContextDataIsSharedAcrossOnionLayers) {
 TEST(FusedOnionTest, ErrorInterceptorCanRecoverAndResponseHooksStillRun) {
     bool response_hook_called = false;
 
-    FusedOnion pipeline(
-        [](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            throw std::runtime_error("controller failed");
-            co_return;
-        }
-    );
+    FusedOnion pipeline([](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        throw std::runtime_error("controller failed");
+        co_return;
+    });
 
-    pipeline.error.use([](FusedOnion::Context& context) -> FusedOnion::Awaitable {
+    pipeline.error.use([](FusedOnion::Context &context) -> FusedOnion::Awaitable {
         context.response.result(http::status::internal_server_error);
         context.response.body() = "recovered";
         context.handle_error();
         co_return;
     });
 
-    pipeline.response.use([&response_hook_called](FusedOnion::Context&)
-        -> FusedOnion::Awaitable {
+    pipeline.response.use([&response_hook_called](FusedOnion::Context &) -> FusedOnion::Awaitable {
         response_hook_called = true;
         co_return;
     });
@@ -235,18 +200,14 @@ TEST(FusedOnionTest, ErrorInterceptorCanRecoverAndResponseHooksStillRun) {
 TEST(FusedOnionTest, EjectRemovesOnlyTheSelectedHandler) {
     int calls = 0;
 
-    FusedOnion pipeline(
-        [&calls](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            ++calls;
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&calls](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        ++calls;
+        co_return;
+    });
 
-    const auto id = pipeline.request.use(
-        [](FusedOnion::Context&) -> FusedOnion::Awaitable {
-            co_return;
-        }
-    );
+    const auto id = pipeline.request.use([](FusedOnion::Context &) -> FusedOnion::Awaitable {
+        co_return;
+    });
 
     EXPECT_EQ(pipeline.request.size(), 1U);
     EXPECT_TRUE(pipeline.request.eject(id));
@@ -264,26 +225,20 @@ TEST(FusedOnionTest, EjectRemovesOnlyTheSelectedHandler) {
 TEST(FusedOnionTest, PreAndPostAdaptersAreOnionLayers) {
     std::vector<std::string> events;
 
-    FusedOnion pipeline(
-        [&events](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            events.emplace_back("controller");
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&events](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        events.emplace_back("controller");
+        co_return;
+    });
 
-    pipeline.middleware.use(FusedOnion::pre(
-        [&events](FusedOnion::Context&) -> FusedOnion::Awaitable {
-            events.emplace_back("pre");
-            co_return;
-        }
-    ));
+    pipeline.middleware.use(FusedOnion::pre([&events](FusedOnion::Context &) -> FusedOnion::Awaitable {
+        events.emplace_back("pre");
+        co_return;
+    }));
 
-    pipeline.middleware.use(FusedOnion::post(
-        [&events](FusedOnion::Context&) -> FusedOnion::Awaitable {
-            events.emplace_back("post");
-            co_return;
-        }
-    ));
+    pipeline.middleware.use(FusedOnion::post([&events](FusedOnion::Context &) -> FusedOnion::Awaitable {
+        events.emplace_back("post");
+        co_return;
+    }));
 
     auto request = MakeRequest();
     auto response = MakeResponse();
@@ -298,18 +253,14 @@ TEST(FusedOnionTest, PreAndPostAdaptersAreOnionLayers) {
 TEST(FusedOnionTest, AuthMiddlewareFactoryCanShortCircuit) {
     bool controller_called = false;
 
-    FusedOnion pipeline(
-        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            controller_called = true;
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&controller_called](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        controller_called = true;
+        co_return;
+    });
 
-    brazier::Middleware authentication = brazier::authMiddleware(
-        [](const FusedOnion::Request&) {
-            return false;
-        }
-    );
+    brazier::Middleware authentication = brazier::authMiddleware([](const FusedOnion::Request &) {
+        return false;
+    });
     pipeline.middleware.use(authentication);
 
     auto request = MakeRequest();
@@ -325,12 +276,10 @@ TEST(FusedOnionTest, AuthMiddlewareFactoryCanShortCircuit) {
 TEST(FusedOnionTest, CorsMiddlewareFactoryAddsHeadersAndContinues) {
     bool controller_called = false;
 
-    FusedOnion pipeline(
-        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            controller_called = true;
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&controller_called](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        controller_called = true;
+        co_return;
+    });
 
     pipeline.middleware.use(brazier::corsMiddleware({"https://example.com"}));
 
@@ -349,12 +298,10 @@ TEST(FusedOnionTest, CorsMiddlewareFactoryAddsHeadersAndContinues) {
 TEST(FusedOnionTest, CorsMiddlewareFactoryRejectsUnconfiguredOrigins) {
     bool controller_called = false;
 
-    FusedOnion pipeline(
-        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            controller_called = true;
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&controller_called](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        controller_called = true;
+        co_return;
+    });
 
     pipeline.middleware.use(brazier::corsMiddleware({"https://allowed.example"}));
 
@@ -372,12 +319,10 @@ TEST(FusedOnionTest, CorsMiddlewareFactoryRejectsUnconfiguredOrigins) {
 TEST(FusedOnionTest, CorsMiddlewareFactoryHandlesOptionsPreflight) {
     bool controller_called = false;
 
-    FusedOnion pipeline(
-        [&controller_called](const auto&, auto&, const auto&) -> FusedOnion::Awaitable {
-            controller_called = true;
-            co_return;
-        }
-    );
+    FusedOnion pipeline([&controller_called](const auto &, auto &, const auto &) -> FusedOnion::Awaitable {
+        controller_called = true;
+        co_return;
+    });
 
     pipeline.middleware.use(brazier::corsMiddleware({"https://example.com"}));
 

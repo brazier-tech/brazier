@@ -10,7 +10,7 @@
 
 using namespace brazier;
 
-void RouterRegisterer::init(boost::asio::io_context& io) {
+void RouterRegisterer::init(boost::asio::io_context &io) {
 #define R(method, path, controller, handler) \
             Router::add(method, path, [controller](const Request& req, Response& res, const Params& params) -> boost::asio::awaitable<void> { \
                 co_await controller->handler(req, res, params); \

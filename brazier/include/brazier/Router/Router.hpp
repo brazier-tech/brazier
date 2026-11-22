@@ -16,11 +16,11 @@
 #include <regex>
 #include <vector>
 #include <shared_mutex>
+#include <mutex>
 
 #include "Route.hpp"
 
 namespace brazier {
-
     namespace beast = boost::beast;
     namespace http = beast::http;
 
@@ -28,22 +28,15 @@ namespace brazier {
         using Request = http::request<http::string_body>;
         using Response = http::response<http::string_body>;
         using Params = std::unordered_map<std::string, std::string>;
-        using RouteList = std::vector<std::shared_ptr<Route>>;
+        using RouteList = std::vector<std::shared_ptr<Route> >;
 
-        static std::unordered_map<http::verb, RouteList>& get_routes();
-        static std::shared_mutex& get_routes_mutex();
+        static std::unordered_map<http::verb, RouteList> &get_routes();
+
+        static std::shared_mutex &get_routes_mutex();
 
     public:
-        // The returned shared route handle remains stable even if more routes are registered and the route table's vectors reallocate.
-        static std::shared_ptr<Route> add(
-            http::verb method,
-            const std::string& path,
-            FusedOnion::Controller handler
-        );
+        static std::shared_ptr<Route> add(http::verb method, const std::string &path, FusedOnion::Controller handler);
 
-        static boost::asio::awaitable<void> handle_request(
-            const Request& req,
-            Response& res
-        );
+        static boost::asio::awaitable<void> handle_request(const Request &req, Response &res);
     };
 }

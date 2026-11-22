@@ -10,22 +10,22 @@
 
 using namespace brazier;
 
-boost::asio::awaitable<void> Controller::show(const Request& req, Response& res, const Params& params) {
+boost::asio::awaitable<void> Controller::show(const Request &req, Response &res, const Params &params) {
     res.result(http::status::method_not_allowed);
     co_return;
 }
 
-boost::asio::awaitable<void> Controller::store(const Request& req, Response& res, const Params& params) {
+boost::asio::awaitable<void> Controller::store(const Request &req, Response &res, const Params &params) {
     res.result(http::status::method_not_allowed);
     co_return;
 }
 
-boost::asio::awaitable<void> Controller::delete_(const Request& req, Response& res, const Params& params) {
+boost::asio::awaitable<void> Controller::delete_(const Request &req, Response &res, const Params &params) {
     res.result(http::status::method_not_allowed);
     co_return;
 }
 
-boost::asio::awaitable<void> Controller::update(const Request& req, Response& res, const Params& params) {
+boost::asio::awaitable<void> Controller::update(const Request &req, Response &res, const Params &params) {
     res.result(http::status::method_not_allowed);
     co_return;
 }
