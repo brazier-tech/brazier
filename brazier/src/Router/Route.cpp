@@ -1,5 +1,5 @@
 /**
-* Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Hlib Safiannikov.
+ * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Hlib Safiannikov.
  * SPDX-License-Identifier: LGPL-3.0-or-later
  *
  * This source code is licensed under the LGPL license found in the
