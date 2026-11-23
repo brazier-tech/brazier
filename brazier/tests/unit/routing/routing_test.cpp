@@ -64,6 +64,31 @@ public:
         res.body() = req.body();
         co_return;
     }
+
+    boost::asio::awaitable<void> test_delete(const Request& req, Response& res, const Params& params) {
+        res.result(http::status::no_content);
+        co_return;
+    }
+
+    boost::asio::awaitable<void> put_item(const Request& req, Response& res, const Params&) {
+        res.result(http::status::ok);
+        res.set(http::field::content_type, "application/json");
+        res.body() = req.body();
+        co_return;
+    }
+
+    boost::asio::awaitable<void> update_item(const Request& req, Response& res, const Params&) {
+        res.result(http::status::ok);
+        res.set(http::field::content_type, "application/json");
+        res.body() = req.body();
+        co_return;
+    }
+
+    boost::asio::awaitable<void> options_handler(const Request&, Response& res, const Params&) {
+        res.result(http::status::no_content);
+        res.set(http::field::allow, "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+        co_return;
+    }
 };
 
 template<typename AsyncOp>
@@ -102,7 +127,17 @@ class RoutingTest : public ::testing::Test {
 protected:
     static void SetUpTestSuite() {
         server_available_ = IsServerRunning();
-        http_url_base = baseUrl();    
+        http_url_base = baseUrl(); 
+
+        auto test_controller = std::make_shared<TestController>();
+
+        R(GET, "/test", test_controller, show);
+        R(GET, "/test/json", test_controller, json_response);
+        R(POST, "/test/echo", test_controller, echo_post);
+        R(PUT, "/test/put_item", test_controller, put_item);
+        R(PATCH, "/test/update_item", test_controller, update_item);
+        R(DELETE_, "/test/delete", test_controller, test_delete);
+        R(OPTIONS, "/test/options", test_controller, options_handler);
     }
 
     void SetUp() override {
@@ -118,15 +153,58 @@ protected:
 bool RoutingTest::server_available_ = false;
 std::string RoutingTest::http_url_base = "";
 
-TEST_F(RoutingTest, AddRouteAndGet) {
-    auto test_controller = std::make_shared<TestController>();
+TEST_F(RoutingTest, RouteHead) {
+    // TODO: HEAD is not implemented in Router yet — /test returns 404.
+    //       When HEAD support is added:
+    //         1) register R(HEAD, "/test", test_controller, show);
+    //         2) in Server::handle_connection, clear res.body() for req.method()==head
+    //            before http::async_write (otherwise the server sends a body,
+    //            violating RFC 9110 §9.3.2);
+    //         3) change the expected status below from 404 to 200 and uncomment
+    //            the "after implementation" block.
 
-    R(GET, "/test", test_controller, show);
-    R(GET, "/test/json", test_controller, json_response);
-    R(POST, "/test/echo", test_controller, echo_post);
+    net::io_context io;
+    beast::tcp_stream stream(io);
+    tcp::resolver resolver(io);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    auto results = resolver.resolve(host_global, std::to_string(port_global));
+    stream.connect(results);
 
+    http::request<http::empty_body> req{ http::verb::head, "/test", 11 };
+    req.set(http::field::host, host_global);
+    req.set(http::field::connection, "close");
+    http::write(stream, req);
+
+    beast::flat_buffer buffer;
+    http::response_parser<http::string_body> parser;
+    parser.skip(true);   // HEAD: do not read a body even if Content-Length > 0
+
+    boost::system::error_code ec;
+    http::read(stream, buffer, parser, ec);
+
+    ASSERT_FALSE(ec) << "Read failed: " << ec.message();
+    ASSERT_TRUE(parser.is_done()) << "Incomplete HEAD response";
+
+    auto& res = parser.get();
+
+    // Current behavior: HEAD is not registered, so 404.
+    EXPECT_EQ(res.result_int(), 404)
+        << "HEAD is not implemented yet; expected 404 placeholder. "
+        "See TODO at the top of the test when HEAD is implemented.";
+
+    EXPECT_TRUE(res.body().empty())
+        << "HEAD response must not contain a body, got "
+        << res.body().size() << " bytes";
+
+    // --- After HEAD is implemented: uncomment and remove the block above ---
+    // EXPECT_EQ(res.result_int(), 200);
+    // auto cl = res.find(http::field::content_length);
+    // ASSERT_NE(cl, res.end()) << "HEAD response missing Content-Length";
+    // EXPECT_EQ(std::stoul(std::string(cl->value())), 33u)
+    //     << "Content-Length must match GET body size";
+}
+
+TEST_F(RoutingTest, RouteGet) {
     brazier::HttpClient client;
     client.set_verify_ssl(false);
     client.set_timeout(std::chrono::seconds(10));
@@ -139,6 +217,160 @@ TEST_F(RoutingTest, AddRouteAndGet) {
         EXPECT_EQ(response.result_int(), 200);
         EXPECT_EQ(response.body(), "TestController show method called");
         EXPECT_EQ(response[boost::beast::http::field::content_type], "text/plain");
+    }
+    catch (const std::exception& e) {
+        FAIL() << "Request failed: " << e.what();
+    }
+}
+
+TEST_F(RoutingTest, RoutePost) {
+    brazier::HttpClient client;
+    client.set_verify_ssl(false);
+    client.set_timeout(std::chrono::seconds(5));
+
+    nlohmann::json request_body = {
+        {"name", "Test User"},
+        {"age", 25},
+        {"email", "test@example.com"}
+    };
+
+    try {
+        auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
+            co_return co_await client.post(http_url_base + "/test/echo", request_body);
+            });
+
+        EXPECT_EQ(response.result_int(), 200);
+        EXPECT_EQ(response[boost::beast::http::field::content_type], "application/json");
+
+        auto response_json = nlohmann::json::parse(response.body());
+        EXPECT_EQ(response_json["name"], "Test User");
+        EXPECT_EQ(response_json["age"], 25);
+        EXPECT_EQ(response_json["email"], "test@example.com");
+    }
+    catch (const std::exception& e) {
+        FAIL() << "Request failed: " << e.what();
+    }
+}
+
+TEST_F(RoutingTest, RoutePut) {
+    brazier::HttpClient client;
+    client.set_verify_ssl(false);
+    client.set_timeout(std::chrono::seconds(10));
+
+    nlohmann::json body = { {"name", "Put User"}, {"age", 30} };
+
+    try {
+        auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
+            co_return co_await client.put(http_url_base + "/test/put_item", body);
+            });
+
+        EXPECT_EQ(response.result_int(), 200);
+        auto json = nlohmann::json::parse(response.body());
+        EXPECT_EQ(json["name"], "Put User");
+        EXPECT_EQ(json["age"], 30);
+    }
+    catch (const std::exception& e) {
+        FAIL() << "Request failed: " << e.what();
+    }
+}
+
+TEST_F(RoutingTest, RoutePatch) {
+    tcp_test::TcpClient c(host_global, port_global);
+    ASSERT_TRUE(c.connect());
+
+    std::string body = R"({"age":31})";
+
+    std::string request =
+        "PATCH /test/update_item HTTP/1.1\r\n"
+        "Host: " + host_global + "\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: " + std::to_string(body.size()) + "\r\n"
+        "Connection: close\r\n"
+        "\r\n" + body;
+
+    ASSERT_TRUE(c.send_raw(request));
+
+    auto res = c.read_response(5);
+    ASSERT_TRUE(res.has_value()) << "No response to PATCH";
+
+    EXPECT_EQ(res->result_int(), 200);
+    EXPECT_EQ(res->body(), body);   
+
+    auto json = nlohmann::json::parse(res->body());
+    EXPECT_EQ(json["age"], 31);
+}
+
+TEST_F(RoutingTest, RouteDelete) {
+    brazier::HttpClient client;
+    client.set_verify_ssl(false);
+    client.set_timeout(std::chrono::seconds(10));
+
+    try {
+        auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
+            co_return co_await client.del(http_url_base + "/test/delete");
+            });
+
+        EXPECT_EQ(response.result_int(), 204);
+    }
+    catch (const std::exception& e) {
+        FAIL() << "Request failed: " << e.what();
+    }
+}
+
+TEST_F(RoutingTest, RouteOptions) {
+    tcp_test::TcpClient c(host_global, port_global);
+    ASSERT_TRUE(c.connect());
+
+    ASSERT_TRUE(c.send_raw(
+        "OPTIONS /test/options HTTP/1.1\r\n"
+        "Host: " + host_global + "\r\n"
+        "Connection: close\r\n\r\n"));
+
+    auto res = c.read_response(5);
+    ASSERT_TRUE(res.has_value()) << "No response to OPTIONS";
+
+    EXPECT_EQ(res->result_int(), 204);
+
+    auto allow = res->find(http::field::allow);
+    ASSERT_NE(allow, res->end()) << "OPTIONS must include Allow header";
+    EXPECT_NE(std::string(allow->value()).find("GET"), std::string::npos);
+    EXPECT_NE(std::string(allow->value()).find("OPTIONS"), std::string::npos);
+}
+
+TEST_F(RoutingTest, PostOnGetRoute) {
+    tcp_test::TcpClient c(host_global, port_global);
+    ASSERT_TRUE(c.connect());
+
+    std::string body = R"({"x":1})";
+    ASSERT_TRUE(c.send_raw(
+        "POST /test HTTP/1.1\r\n"
+        "Host: " + host_global + "\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: " + std::to_string(body.size()) + "\r\n"
+        "Connection: close\r\n\r\n" + body));
+
+    auto res = c.read_response(5);
+    ASSERT_TRUE(res.has_value());
+
+    EXPECT_TRUE(res->result_int() == 405 || res->result_int() == 404);
+    if (res->result_int() == 405) {
+        auto allow = res->find(http::field::allow);
+        ASSERT_NE(allow, res->end()) << "405 MUST include Allow header (RFC 9110)";
+        EXPECT_NE(std::string(allow->value()).find("GET"), std::string::npos);
+    }
+}
+
+TEST_F(RoutingTest, GetOnDeleteRoute) {
+    brazier::HttpClient client;
+    client.set_verify_ssl(false);
+    client.set_timeout(std::chrono::seconds(10));
+
+    try {
+        auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
+            co_return co_await client.get(http_url_base + "/test/delete");
+            });
+
+        EXPECT_TRUE(response.result_int() == 405 || response.result_int() == 404) << "Got " << response.result_int();
     }
     catch (const std::exception& e) {
         FAIL() << "Request failed: " << e.what();
@@ -167,34 +399,6 @@ TEST_F(RoutingTest, JsonResponse) {
     }
 }
 
-TEST_F(RoutingTest, PostWithBody) {
-    brazier::HttpClient client;
-    client.set_verify_ssl(false);
-    client.set_timeout(std::chrono::seconds(5));
-
-    nlohmann::json request_body = {
-        {"name", "Test User"},
-        {"age", 25},
-        {"email", "test@example.com"}
-    };
-
-    try {
-        auto response = RunAsync([&]() -> boost::asio::awaitable<brazier::Response> {
-            co_return co_await client.post(http_url_base + "/test/echo", request_body);
-            });
-
-        EXPECT_EQ(response.result_int(), 200);
-        EXPECT_EQ(response[boost::beast::http::field::content_type], "application/json");
-
-        auto response_json = nlohmann::json::parse(response.body());
-        EXPECT_EQ(response_json["name"], "Test User");
-        EXPECT_EQ(response_json["age"], 25);
-        EXPECT_EQ(response_json["email"], "test@example.com");
-    }
-    catch (const std::exception& e) {
-        FAIL() << "Request failed: " << e.what();
-    }
-}
 
 TEST_F(RoutingTest, NotFound) {
     brazier::HttpClient client;
