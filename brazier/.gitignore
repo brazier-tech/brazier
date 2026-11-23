@@ -11,3 +11,6 @@ certs/
 stress_logs/
 *.pem
 vcpkg-configuration.json
+/CMakeFiles
+/.cmake
+/Testing

@@ -1,24 +1,13 @@
-/*
- * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Gleb Safyannikov
+/**
+ * Copyright (c) 2026 Kirill Sergeev, Nikolay Sugonyako, Andrey Agarkov, Hlib Safiannikov.
  * SPDX-License-Identifier: LGPL-3.0-or-later
  *
- * This file is part of brazier.
- *
- * brazier is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * brazier is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with brazier; if not, see <https://www.gnu.org/licenses/>.
+ * This source code is licensed under the LGPL license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
-#pragma once 
+#pragma once
+
 #include <string>
 #include <regex>
 #include <vector>
@@ -28,6 +17,8 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/beast/http.hpp>
 
+#include "../App/Http/Middleware/FusedOnion.hpp"
+
 namespace beast = boost::beast;
 namespace http = beast::http;
 
@@ -36,23 +27,29 @@ using Response = http::response<http::string_body>;
 using Params = std::unordered_map<std::string, std::string>;
 
 namespace brazier {
-
     class Route {
+        FusedOnion pipeline_;
         std::regex pathRegex_;
         std::vector<std::string> paramNames_;
         std::string originalPath_;
-        std::function<boost::asio::awaitable<void>(const Request&, Response&, const Params&)> handler_;
 
     public:
-        Route(const std::string& path,
-            std::function<boost::asio::awaitable<void>(const Request&, Response&, const Params&)> handler);
+        FusedOnion::RequestManager request;
+        FusedOnion::MiddlewareManager middleware;
+        FusedOnion::ResponseManager response;
+        FusedOnion::ErrorManager error;
 
-        bool match(const std::string& target, Params& outParams) const;
-        boost::asio::awaitable<void> process(const Request& req, Response& res, const Params& params) const;
-        const std::string& path() const;
+        Route(const std::string &path, FusedOnion::Controller handler);
+
+        bool match(const std::string &target, Params &outParams) const;
+
+        boost::asio::awaitable<void> process(const Request &req, Response &res, const Params &params) const;
+
+        const std::string &path() const;
 
     private:
-        static std::regex convertPathToRegex(const std::string& path);
-        static std::vector<std::string> extractParamNames(const std::string& path);
+        static std::regex convertPathToRegex(const std::string &path);
+
+        static std::vector<std::string> extractParamNames(const std::string &path);
     };
 }
