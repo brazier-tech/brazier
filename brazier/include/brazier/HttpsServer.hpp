@@ -98,8 +98,7 @@ namespace brazier {
 
         std::vector<std::unique_ptr<net::io_context>> io_contexts_;
         std::vector<std::unique_ptr<tcp::acceptor>>   acceptors_;
-        std::vector<std::unique_ptr<
-            net::executor_work_guard<net::io_context::executor_type>>> work_guards_;
+        std::vector<std::unique_ptr<net::executor_work_guard<net::io_context::executor_type>>> work_guards_;
 
         std::shared_ptr<ssl::context> ssl_ctx_;
         std::shared_mutex             ssl_ctx_mutex_;

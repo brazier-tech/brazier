@@ -41,5 +41,5 @@ extern std::string host_global;
 extern int         https_port_global;
 extern std::string https_host_global;
 
-constexpr bool kStartHttpServer = false;
-constexpr bool kStartHttpsServer = true;
+constexpr bool kStartHttpServer = true;
+constexpr bool kStartHttpsServer = false;

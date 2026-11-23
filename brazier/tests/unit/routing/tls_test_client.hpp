@@ -28,13 +28,11 @@ namespace tls_test {
         ssl::context    ctx;
         std::unique_ptr<ssl::stream<beast::tcp_stream>> stream;
 
-        TlsClient(const std::string& host, unsigned short port,
-            bool with_client_cert = false,
-            const std::string& cert = "",
-            const std::string& key = "")
-            : host_(host), port_(port)
-            , ctx(ssl::context::tls_client) {
+        TlsClient(const std::string& host, unsigned short port, bool with_client_cert = false, const std::string& cert = "", const std::string& key = "")
+            : host_(host), port_(port), ctx(ssl::context::tls_client) 
+        {
             ctx.set_verify_mode(ssl::verify_none);
+
             if (with_client_cert) {
                 ctx.use_certificate_chain_file(cert);
                 ctx.use_private_key_file(key, ssl::context::pem);
@@ -47,11 +45,11 @@ namespace tls_test {
                 tcp::resolver resolver(io);
                 auto results = resolver.resolve(host_, std::to_string(port_));
 
-                beast::get_lowest_layer(*stream).expires_after(
-                    std::chrono::seconds(timeout_sec));
+                beast::get_lowest_layer(*stream).expires_after(std::chrono::seconds(timeout_sec));
                 beast::get_lowest_layer(*stream).connect(results);
                 beast::get_lowest_layer(*stream).expires_never();
                 stream->handshake(ssl::stream_base::client);
+
                 return true;
             }
             catch (const std::exception&) {
@@ -61,9 +59,9 @@ namespace tls_test {
 
         bool send_raw(const std::string& data) {
             try {
-                beast::get_lowest_layer(*stream).expires_after(
-                    std::chrono::seconds(kSocketTimeoutSec));
+                beast::get_lowest_layer(*stream).expires_after(std::chrono::seconds(kSocketTimeoutSec));
                 net::write(*stream, net::buffer(data));
+
                 return true;
             }
             catch (const std::exception&) {
@@ -71,14 +69,13 @@ namespace tls_test {
             }
         }
 
-        std::optional<http::response<http::string_body>>
-            read_response(int timeout_sec = kSocketTimeoutSec) {
+        std::optional<http::response<http::string_body>> read_response(int timeout_sec = kSocketTimeoutSec) {
             try {
                 beast::flat_buffer buffer;
                 http::response<http::string_body> res;
-                beast::get_lowest_layer(*stream).expires_after(
-                    std::chrono::seconds(timeout_sec));
+                beast::get_lowest_layer(*stream).expires_after(std::chrono::seconds(timeout_sec));
                 http::read(*stream, buffer, res);
+
                 return res;
             }
             catch (const std::exception&) {
@@ -87,22 +84,26 @@ namespace tls_test {
         }
 
         bool is_connection_closed(int timeout_sec = kSocketTimeoutSec) {
-            if (!stream) return true;
+            if (!stream) 
+                return true;
+
             try {
-                beast::get_lowest_layer(*stream).expires_after(
-                    std::chrono::seconds(timeout_sec));
+                beast::get_lowest_layer(*stream).expires_after(std::chrono::seconds(timeout_sec));
                 char c;
                 beast::error_code ec;
                 auto n = stream->read_some(net::buffer(&c, 1), ec);
 
-                if (ec == net::error::eof ||
-                    ec == net::error::connection_reset ||
-                    ec == ssl::error::stream_truncated ||
-                    ec == beast::error::timeout) {
+                if (ec == net::error::eof || ec == net::error::connection_reset ||
+                    ec == ssl::error::stream_truncated || ec == beast::error::timeout) {
                     return true;
                 }
-                if (ec == net::error::timed_out) return false;
-                if (!ec && n > 0) return false;
+
+                if (ec == net::error::timed_out) 
+                    return false;
+
+                if (!ec && n > 0) 
+                    return false;
+
                 return true;
             }
             catch (const std::exception&) {
