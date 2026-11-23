@@ -27,27 +27,29 @@ using namespace brazier;
 
 int main() {
     try {
-        /*auto benchmark_controller = std::make_shared<BenchmarkController>();
+        auto benchmark_controller = std::make_shared<BenchmarkController>();
 
         R(GET, "/test", benchmark_controller, test);
 
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::ConfigManager::getGlobal().setAutoSave(false);
-        std::string https_server_host =
-            brazier::ConfigManager::getGlobal().get("https_server.host", "0.0.0.0");
-        int https_server_port =
-            brazier::ConfigManager::getGlobal().get("https_server.port", 8443);
-        brazier::Logger::log("HTTPS server: " + https_server_host + ":" +
-            std::to_string(https_server_port), "INFO");
+        std::string https_server_host = brazier::ConfigManager::getGlobal().get("https_server.host", "0.0.0.0");
+        int https_server_port = brazier::ConfigManager::getGlobal().get("https_server.port", 8443);
+        
+        brazier::Logger::log("HTTPS server: " + https_server_host + ":" + std::to_string(https_server_port), "INFO");
 
         brazier::HttpsServer::TlsConfig tls;
         tls.cert_file = "app/certs/server.crt";
         tls.key_file = "app/certs/server.key";
         brazier::HttpsServer https_server(https_server_host, https_server_port, tls);
 
-        if (!https_server.initialize()) return 1;
-        std::thread([&https_server] {
+        if (!https_server.initialize()) 
+            return 1;
+        
+        auto https_thread = std::thread([&https_server] {
+            https_server.run();
             std::string line;
+
             while (std::getline(std::cin, line)) {
                 if (line == "reload") {
                     https_server.reloadTls();
@@ -56,33 +58,40 @@ int main() {
                     https_server.stop();
                     break;
                 }
-            }
-            }).detach();
-        https_server.run(); 
+            }            
+            });
 
-        return 0;*/
+        std::string server_host = brazier::ConfigManager::getGlobal().get("server.host", "0.0.0.0");
+        int server_port = brazier::ConfigManager::getGlobal().get("server.port", 3502);
+
+        brazier::Server http_server(server_host, server_port);
+
         brazier::ConfigManager::initGlobal("config_test.json");
         brazier::ConfigManager::getGlobal().setAutoSave(false);
 
-        std::string server_host =
-            brazier::ConfigManager::getGlobal().get("server.host", "0.0.0.0");
-        int server_port =
-            brazier::ConfigManager::getGlobal().get("server.port", 3502);
+        brazier::Logger::log("HTTP server: " + server_host + ":" + std::to_string(server_port), "INFO");
 
-        brazier::Logger::log("HTTP server: " + server_host + ":" +
-            std::to_string(server_port), "INFO");
+        if (!http_server.initialize()) 
+            return 1;
 
-        brazier::Server server(server_host,
-            static_cast<unsigned short>(server_port));
+        auto http_thread = std::thread([&http_server] {
+            http_server.run();
+            std::string line;
 
-        if (!server.initialize()) return 1;
+            while (std::getline(std::cin, line)) {
+                if (line == "quit") {
+                    http_server.stop();
+                    break;
+                }
+            }
+            });
 
-        server.run();
+        http_thread.join();
 
         return 0;
+    
     }
     catch (const std::exception& e) {
-        std::cerr << "Fatal error: " << e.what() << std::endl;
         brazier::Logger::log(std::string(e.what()), "ERROR");
         return 1;
     }
